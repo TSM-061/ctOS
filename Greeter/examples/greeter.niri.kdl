@@ -1,0 +1,13 @@
+spawn-sh-at-startup "CTOS_MODE=greetd quickshell --path /opt/ctos/Greeter"
+
+animations {
+    off
+}
+
+hotkey-overlay {
+    skip-at-startup
+}
+
+layout {
+    background-color "#0E0E0E"
+}

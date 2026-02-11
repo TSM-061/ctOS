@@ -2,9 +2,15 @@
 
 To run the greeter, you must have the following core components installed on your system:
 
+### Required
+
 - **[Quickshell](https://www.google.com/search?q=https://outfoxxed.github.io/quickshell/):** The engine used to render the QML interface and provide the necessary Wayland desktop shell integrations.
 
 - **[greetd](https://git.sr.ht/~kennylevinsen/greetd):** The login daemon responsible for session management and user authentication.
+
+### Optional
+
+- **[uwsm](https://wiki.archlinux.org/title/Universal_Wayland_Session_Manager):** Provides a more consistent interface for launch/exit commands, using this is _not_ necessary but makes installation easier.
 
 - **JetbrainsMono Nerd Font**: The font I used while designing. Use [Configuration](#configuration) if you want to override it.
 
@@ -14,53 +20,65 @@ To run the greeter, you must have the following core components installed on you
 
 ### 1. Run [Install Script](/install.sh)
 
-The install script should cover the basic use case with Hyprland. If you aren't using Hyprland you'll need to check [configuration](#configuration) options after installing.
+The install script handles installing everything for selected compositors. If you aren't using one of them you'll need to check [configuration](#configuration) options after installing. After the script runs you may want to edit the compositor configuration to add more accurate monitor settings.
+
+##### Easy Install Compositors
+
+- Hyprland
+- Niri
+
+> _Note_: Any wayland based compositor should work as long as it can run quickshell. I just don't have experience with them to provide configurations myself.
 
 ### 2. Greetd
 
-#### Hyprland
+##### Minimal Compositor Config:
 
-**2.1 Add hyprland config:** Copy this scaffold from [greeter.hyprland.conf](./examples/greeter.hyprland.conf) into the directory `/etc/ctos`. Then modify the file to include your monitor setup.
+If you are not on the listed [easy install compositors](#easy-install-compositors), you will have to add your own minimal configuration.
 
-> We run `quickshell` in a minimal setup of your preferred compositor as a frontend for `greetd`. I believe any wayland based compositor should work as long as it can run quickshell.
-
-**2.2 Modify `/etc/greetd/config.toml`**:
-
-> _Note_: On my setup im using CachyOS and the greetd setup may look different or use a different user, should have no problems as long as that created user is the same in the `config.toml`
+##### Modify `/etc/greetd/config.toml`:
 
 ```toml
 # Modify your greetd configuration to point to your minimal config.
+
 [terminal]
 vt = 1
 
 [default_session]
-command = "start-hyprland -- --config /etc/ctos/greeter.hyprland.conf"
+# only ONE command should be active
+
+# hyprland
+command = "env HYPRLAND_CONFIG=/etc/ctos/greeter.hyprland.conf uwsm start hyprland.desktop"
+
+# niri
+command = "env NIRI_CONFIG=/etc/ctos/greeter.niri.kdl uwsm start niri.desktop"
+
 user = "greeter"  # okay to be different, don't modify from your default
 
 # Keep this as a backup to boot into your default session if needed
 # command = "agreety --cmd 'uwsm start hyprland.desktop'"
 ```
 
-### 3. Session Lock (Lockd)
+> _Note_: On my setup im using CachyOS and the greetd setup may look different or use a different user, should have no problems as long as that created user is the same in the `config.toml`
 
-All thats required for the session locker is that you run this command, the `CTOS_MODE=lockd` is what tells the shell to run as a session locker.
-
-```bash
-CTOS_MODE=lockd quickshell --path /opt/ctos/Greeter
-```
-
-### 4. Verifying Installation
+### 3. Verifying Installation
 
 > **Note:** Be aware of the [Recovery](#recovery) section in case of issues.
 
 By default, the shell starts in a test state. This allows you to verify the UI and animations are working correctly without needing a functional `greetd` backend or a live session.
 
 - **Default Password:** In test mode, use the password **`password`** to simulate a successful login.
-- **Testing UI:** Simply run the below command and you'll be able to see if everything works normally.
-- **Exit Shorccut:** `Esc` will quit.
+- **Exit Shortcut:** `Esc` will terminate the process.
 
 ```bash
 CTOS_DEBUG=1 CTOS_MODE=test quickshell --path /opt/ctos/Greeter
+```
+
+### 4. Session Lock (Lockd)
+
+All that's required for the session locker is that you run this command, the `CTOS_MODE=lockd` is what tells the shell to run as a session locker.
+
+```bash
+CTOS_MODE=lockd quickshell --path /opt/ctos/Greeter
 ```
 
 <br>
@@ -69,16 +87,14 @@ CTOS_DEBUG=1 CTOS_MODE=test quickshell --path /opt/ctos/Greeter
 
 Configuration will be installed in `/etc/ctos`. The example file below will be installed by the script and should suit most use cases. Please see the file comments for descriptions.
 
-### Non-Hyprland Users
-
-See the options `modes.greetd.launch` and `modes.greetd.exit`
+> _Other Compositors:_ See the options `modes.greetd.launch` and `modes.greetd.exit`
 
 `/etc/ctos/greeter.config.json`:
 
 ```jsonc
 {
   /* Link to the JSON Schema for IDE autocompletion and validation */
-  "$schema": "https://raw.githubusercontent.com/TSM-061/ctOS/main/schema/greeter-schema.json",
+  "$schema": "https://raw.githubusercontent.com/TSM-061/ctOS/main/schema/greeter.schema.json",
 
   /* The Unix username used for the login session */
   "user": "tomtom",
@@ -106,7 +122,7 @@ See the options `modes.greetd.launch` and `modes.greetd.exit`
     "greetd": {
       "animations": "all",
       /* Command sequence to terminate the greeter compositor */
-      "exit": ["hyprctl", "dispatch", "exit"],
+      "exit": ["uwsm", "stop"],
       /* Command sequence to launch the main desktop session */
       "launch": ["uwsm", "start", "hyprland.desktop"],
     },
