@@ -23,7 +23,8 @@ Singleton {
     readonly property var modes: {
         "test": 0,
         "lockd": 1,
-        "greetd": 2
+        "greetd": 2,
+        "kiosk": 3  // still greetd but designed for cage
     }
 
     readonly property int mode: {
@@ -47,6 +48,7 @@ Singleton {
     readonly property bool isTest: mode === modes.test
     readonly property bool isGreetd: mode === modes.greetd
     readonly property bool isLockd: mode === modes.lockd
+    readonly property bool isKiosk: mode === modes.kiosk
 
     readonly property string monitor: {
         const monitor = greeter.getOptional("monitor");

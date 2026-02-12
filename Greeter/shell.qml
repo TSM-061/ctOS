@@ -9,7 +9,7 @@ Scope {
     id: greeter
 
     Loader {
-        active: Settings.isDebug || Settings.isTest
+        active: Settings.isTest
         anchors.fill: parent
         sourceComponent: Tester {}
     }
@@ -24,5 +24,11 @@ Scope {
         active: Settings.isLockd
         anchors.fill: parent
         sourceComponent: Locker {}
+    }
+
+    Loader {
+        active: Settings.isKiosk
+        anchors.fill: parent
+        sourceComponent: Kiosk {}
     }
 }

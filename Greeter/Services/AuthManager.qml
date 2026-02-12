@@ -43,12 +43,12 @@ Singleton {
         if (Settings.isTest) {
             _handler = FakeHandler;
             TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} Using Protocol::TEST`);
-        } else if (Settings.isGreetd) {
+        } else if (Settings.isGreetd || Settings.isKiosk) {
             _handler = GreetdHandler;
-            TerminalManager.displayMessage(`${authManager._blumePrefix} Protocol::CTOS_GREETD->Init`);
+            TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} Protocol::CTOS_GREETD`);
         } else if (Settings.isLockd) {
             _handler = LockdHandler;
-            TerminalManager.displayMessage(`${authManager._blumePrefix} Protocol::CTOS_LOCKD->Init`);
+            TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} Protocol::CTOS_LOCKD`);
         } else {
             throw new Error("No Auth Manager provided: set CTOS_MODE to 'greetd' or 'lockd'");
         }

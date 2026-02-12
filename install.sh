@@ -89,7 +89,7 @@ ensure_exists() {
   if [[ -d "$(dirname "$input")" ]]; then
     if [[ ! -f "$input" ]]; then
       echo
-      echo "! [ERROR] file not found '$input'"
+      echo "[!][ERROR] file not found '$input'"
       exit 1
     else
       contents=$(cat "$input")
@@ -100,7 +100,7 @@ ensure_exists() {
 
   if [[ -z "$contents" ]]; then
     echo
-    echo "! [ERROR] empty input"
+    echo "[!][ERROR] empty input"
     exit 1
   fi
 
@@ -169,9 +169,11 @@ function install_greeter_compositor_config() {
   local config_dest="$CONFIG_DIR/$(basename "$config_src")"
 
   if [[ -z "$config_src" ]]; then
-    echo "[ITEM]   n/a: $CONFIG_DIR/[greeter.<conpositor>.<filetype>]"
-    echo "  -[NOTE] you will have to setup your own minimal compositor configuration at the above location. If you can add a pull request I can add additional scaffolds to the repo."
-    echo "  -[LINK] documented here: https://github.com/TSM-061/ctOS/tree/main/Greeter#non-hyprland-users"
+    echo "[ITEM]     n/a: $CONFIG_DIR/greeter.<compositor>.<filetype>"
+    echo
+    echo "  [!] Note: You can ignore above item being n/a if you are using cage."
+    echo "      https://github.com/TSM-061/ctOS/tree/main/Greeter#other-environments"
+    echo
   fi
 
   if [[ -n "$config_src" ]]; then
@@ -190,7 +192,7 @@ function sync_project_files() {
     "$SCRIPT_DIR/" "$INSTALL_DIR"
 
   if [[ "$FRESH_INSTALL" -eq 1 ]]; then
-    echo "[ITEM] added: $INSTALL_DIR"
+    echo "[ITEM]   added: $INSTALL_DIR"
   else
     echo "[ITEM] updated: $INSTALL_DIR"
   fi
@@ -199,6 +201,7 @@ function sync_project_files() {
 # --------------------------------------------------------------------------------
 # SECTION Main
 # --------------------------------------------------------------------------------
+
 trap graceful_exit ERR SIGINT SIGTERM
 
 detect_compositor
@@ -218,7 +221,8 @@ sync_project_files
 
 if [[ "$FRESH_INSTALL" -eq 1 ]]; then
   echo
-  echo "[NOTE] This installation assumes you are using 'uwsm', if not you will have to change the launch/exit commands in $(basename "$GREETER_CONFIG_FILEPATH")."
+  echo "[WARN] This installation assumes you are using 'uwsm', if not "
+  echo "       change the launch/exit commands in $(basename "$GREETER_CONFIG_FILEPATH")."
 fi
 
 echo

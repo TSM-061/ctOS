@@ -12,6 +12,8 @@ To run the greeter, you must have the following core components installed on you
 
 - **[uwsm](https://wiki.archlinux.org/title/Universal_Wayland_Session_Manager):** Provides a more consistent interface for launch/exit commands, using this is _not_ necessary but makes installation easier.
 
+- **[cage](https://github.com/cage-kiosk/cage):** A lightweight compositor that can host the greeter window. `wlr-randr` can be used to customise monitor config.
+
 - **JetbrainsMono Nerd Font**: The font I used while designing. Use [Configuration](#configuration) if you want to override it.
 
 <br>
@@ -22,18 +24,22 @@ To run the greeter, you must have the following core components installed on you
 
 The install script handles installing everything for selected compositors. If you aren't using one of them you'll need to check [configuration](#configuration) options after installing. After the script runs you may want to edit the compositor configuration to add more accurate monitor settings.
 
+> _Note_: Any wayland based compositor should work as long as it can run quickshell. I just don't have experience with them to provide configurations myself.
+
 ##### Easy Install Compositors
 
 - Hyprland
 - Niri
 
-> _Note_: Any wayland based compositor should work as long as it can run quickshell. I just don't have experience with them to provide configurations myself.
+##### Other Environments
+
+The easiest way to get this running would be by installing `cage` from the [optional deps](#optional)
 
 ### 2. Greetd
 
 ##### Minimal Compositor Config:
 
-If you are not on the listed [easy install compositors](#easy-install-compositors), you will have to add your own minimal configuration.
+If you are not on the listed [easy install compositors](#easy-install-compositors), you will have to add your own minimal configuration or use `cage`.
 
 ##### Modify `/etc/greetd/config.toml`:
 
@@ -51,6 +57,10 @@ command = "env HYPRLAND_CONFIG=/etc/ctos/greeter.hyprland.conf uwsm start hyprla
 
 # niri
 command = "env NIRI_CONFIG=/etc/ctos/greeter.niri.kdl uwsm start niri.desktop"
+
+# others and desktop environment users
+command = "env CTOS_MODE=kiosk cage -ds -m last -- quickshell --path /opt/ctos/Greeter"
+# note: customising monitor setup may require a wrapper script using wlr-randr
 
 user = "greeter"  # okay to be different, don't modify from your default
 
