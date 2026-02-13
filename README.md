@@ -16,7 +16,6 @@ This project is still in very early stages of development. There will be breakin
 
 A stylized login interface.
 
-
 https://github.com/user-attachments/assets/c7bd78d0-3fd7-457d-acd8-bf10e192736e
 
 ### Features
@@ -33,6 +32,18 @@ A stylized menu-bar. Undergoing a rewrite to quickshell.
 ### Features
 
 - **WIP**
+
+<br>
+
+## Extras
+
+### [Kitty Theme](extras/.config/kitty/kitty.conf)
+
+The terminal theme is **[Monoglow](https://github.com/wnkz/monoglow.nvim)** theme by wnkz. I have included the theme files in this repository as I may customize later.
+
+### [Fastfetch Configuration](extras/.config/fastfetch/config.jsonc)
+
+Minimal config, featuring a custom **DeadSec** ASCII logo.
 
 <br>
 

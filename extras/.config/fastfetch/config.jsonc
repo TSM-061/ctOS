@@ -1,0 +1,56 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
+  "logo": {
+    "source": "$HOME/.config/fastfetch/dedsec.txt",
+    "padding": {
+      "top": 1,
+      "left": 7,
+      "right": 10
+    }
+  },
+  "display": {
+    "color": {
+      "keys": "#f1f1f1"
+    }
+  },
+  "modules": [
+    {
+      "type": "title",
+      "format": "{#white}tom-smith{#}{#blue}@{#}{#green}au-south-east-2-014-493{#}"
+    },
+    "separator",
+    {
+      "type": "os",
+      "key": "OS",
+      "format": "ctOS-0.1.0-a"
+    },
+    {
+      "type": "kernel",
+      "key": "Kernel",
+      "format": "blume-krn-1.0.8"
+    },
+    "uptime",
+    "packages",
+    "break",
+    "shell",
+    "de",
+    "wm",
+    "icons",
+    "font",
+    "terminal",
+    "terminalfont",
+    {
+      "type": "custom",
+      "key": "Theme",
+      "format": "wnkz/monoglow.nvim"
+    },
+    "break",
+    "disk",
+    "break",
+    "localip",
+    "battery",
+    "poweradapter",
+    "break",
+    "colors"
+  ]
+}
