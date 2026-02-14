@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 import "../Services"
-import "../Common"
+import "../../Common"
 import "../Config"
 
 Column {

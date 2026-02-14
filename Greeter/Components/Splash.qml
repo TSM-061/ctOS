@@ -1,7 +1,7 @@
 import QtQuick
 
 import "../Config"
-import "../Common"
+import "../../Common"
 
 Item {
     id: root

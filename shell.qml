@@ -2,8 +2,8 @@ import Quickshell
 
 import QtQuick
 
-import "Views"
-import "Config"
+import "./Greeter/Views"
+import "./Greeter/Config"
 
 Scope {
     id: greeter

@@ -3,7 +3,7 @@ import Quickshell
 
 import "../Config"
 import "../Components"
-import "../Common"
+import "../../Common"
 
 Variants {
     model: Quickshell.screens

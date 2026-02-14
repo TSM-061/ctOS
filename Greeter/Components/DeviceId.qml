@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 
 import "../Config"
-import "../Common"
+import "../../Common"
 
 Row {
 

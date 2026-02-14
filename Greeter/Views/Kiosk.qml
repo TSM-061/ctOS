@@ -3,7 +3,7 @@ import Quickshell
 
 import "../Components"
 import "../Config"
-import "../Common"
+import "../../Common"
 
 // qmllint disable
 FloatingWindow {

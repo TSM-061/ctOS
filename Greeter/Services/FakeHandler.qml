@@ -3,7 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-import "../Common"
+import "../../Common"
 
 Singleton {
     id: handler

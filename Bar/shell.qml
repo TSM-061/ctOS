@@ -1,7 +1,7 @@
 import Quickshell
 import QtQuick
 
-import "./Common"
+import "../Common"
 import "./Components"
 
 // qmllint disable

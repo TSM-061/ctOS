@@ -1,6 +1,6 @@
 import QtQuick
 
-import "../Common"
+import "../../Common"
 import "../Config"
 
 Item {

@@ -3,7 +3,7 @@ import QtQuick.Layouts
 
 import Quickshell.Services.UPower
 
-import "../Common"
+import "../../Common"
 import "../Config"
 
 Surface {

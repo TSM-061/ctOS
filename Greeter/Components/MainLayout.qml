@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import "../Services"
 import "../Components"
 import "../Config"
-import "../Common"
+import "../../Common"
 
 Item {
     id: root

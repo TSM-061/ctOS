@@ -5,7 +5,7 @@ import Quickshell.Services.Greetd
 import QtQuick
 
 import "../Config"
-import "../Common"
+import "../../Common"
 
 Singleton {
     id: handler

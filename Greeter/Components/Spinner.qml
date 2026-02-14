@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 
-import "../Common"
+import "../../Common"
 
 Grid {
     id: root
