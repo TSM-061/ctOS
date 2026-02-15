@@ -157,7 +157,7 @@ function run_setup_wizard() {
 }
 
 function install_greeter_compositor_config() {
-  local scaffold_dir="$SCRIPT_DIR/Greeter/examples/"
+  local scaffold_dir="$SCRIPT_DIR/greeter/examples/"
 
   declare -A templates=(
     ["hyprland"]="$scaffold_dir/greeter.hyprland.conf"
@@ -172,7 +172,7 @@ function install_greeter_compositor_config() {
     echo "[ITEM]     n/a: $CONFIG_DIR/greeter.<compositor>.<filetype>"
     echo
     echo "  [!] Note: You can ignore above item being n/a if you are using cage."
-    echo "      https://github.com/TSM-061/ctOS/tree/main/Greeter#other-environments"
+    echo "      https://github.com/TSM-061/ctOS/tree/main/greeter#other-environments"
     echo
   fi
 

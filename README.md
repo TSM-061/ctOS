@@ -12,7 +12,7 @@ This project is still in very early stages of development. There will be breakin
 
 <br>
 
-## [Greeter](Greeter/README.md)
+## [greeter](greeter/README.md)
 
 A stylized login interface.
 
