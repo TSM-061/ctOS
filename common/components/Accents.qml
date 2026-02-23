@@ -10,6 +10,7 @@ Item {
     default property alias content: container.data
 
     property bool animate: true
+    property int individualSize: 4
 
     property int startingHorizontalOffset: 0
     property int startingVerticalOffset: 0
@@ -34,7 +35,9 @@ Item {
 
     Image {
         id: accentTopLeft
-        source: "../resources/accent.svg"
+        width: root.individualSize
+        height: root.individualSize
+        source: "../../greeter/resources/accent.svg"
         anchors {
             left: root.left
             leftMargin: root._horizontalOffset
@@ -45,7 +48,9 @@ Item {
 
     Image {
         id: accentBotLeft
-        source: "../resources/accent.svg"
+        width: root.individualSize
+        height: root.individualSize
+        source: "../../greeter/resources/accent.svg"
         anchors {
             left: root.left
             leftMargin: root._horizontalOffset
@@ -57,7 +62,9 @@ Item {
 
     Image {
         id: accentTopRight
-        source: "../resources/accent.svg"
+        width: root.individualSize
+        height: root.individualSize
+        source: "../../greeter/resources/accent.svg"
         anchors {
             right: root.right
             rightMargin: root._horizontalOffset
@@ -69,7 +76,9 @@ Item {
 
     Image {
         id: accentBotRight
-        source: "../resources/accent.svg"
+        width: root.individualSize
+        height: root.individualSize
+        source: "../../greeter/resources/accent.svg"
         anchors {
             right: root.right
             rightMargin: root._horizontalOffset

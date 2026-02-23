@@ -1,21 +1,36 @@
 import QtQuick
+import qs.common
 
 Item {
     id: root
 
-    property int margins: 3
+    property bool active: true
 
-    height: parent.height - 2
-    width: parent.height - 2
+    height: parent.height
+    width: parent.height
 
     CornerFrame {
-        anchors {
-            fill: parent
-            margins: root.margins
+        anchors.centerIn: parent
+        width: parent.height - 6
+        height: parent.height - 6
+    }
+
+    Item {
+        anchors.centerIn: parent
+        opacity: root.active ? 1 : 0
+
+        Rectangle {
+            width: 9
+            height: 1
+            color: Theme.ctosGray
+            anchors.centerIn: parent
         }
 
-        Item {
-            anchors.fill: parent
+        Rectangle {
+            width: 1
+            height: 9
+            color: Theme.ctosGray
+            anchors.centerIn: parent
         }
     }
 }

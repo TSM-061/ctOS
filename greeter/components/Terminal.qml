@@ -3,6 +3,7 @@ import QtQuick
 
 import qs.greeter.services
 import qs.common
+import qs.common.components
 import qs.greeter.config
 
 Column {
