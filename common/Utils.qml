@@ -12,8 +12,8 @@ Singleton {
         return padTime(date.getHours()) + ":" + padTime(date.getMinutes()) + ":" + padTime(date.getSeconds());
     }
 
-    function clamp(num: int, min: int, max: int): int {
-        return Math.round(Math.min(Math.max(num, min), max));
+    function clamp(num, min, max) {
+        return Math.min(Math.max(num, min), max);
     }
 
     function toStringTyped(value: var): string {

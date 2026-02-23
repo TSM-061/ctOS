@@ -1,116 +1,75 @@
 pragma ComponentBehavior: Bound
-
 import QtQuick
-import QtQuick.Shapes
-
-import qs.common
 
 Item {
     id: root
 
-    property color color: Theme.ctosGray
-    property int length: 10
-    property real thickness: 1
+    property color accentColor: "white"
+    property int thickness: 1
+    property int armLength: 7
+    property int horizontalMargin: 4
 
-    property int count: 0
+    implicitWidth: container.width + 2 * armLength + 2 * horizontalMargin
+    width: implicitWidth
 
-    default property alias content: contentArea.data
+    implicitHeight: container.height + 2 * armLength
+    height: implicitHeight
 
-    onCountChanged: {
-        if (count > 4 || count < 0) {
-            throw new Error(
-                `CornerFrame.count: must be between 0 - 4, received: 
+    default property alias content: container.data
 
+    Row {
+        id: container
+        x: root.armLength + root.horizontalMargin
+        y: root.armLength - 2  // visual fix
+    }
 
+    component Corner: Item {
+        width: root.armLength
+        height: root.armLength
 
+        Rectangle {
+            width: root.armLength
+            height: root.thickness
+            color: root.accentColor
+            anchors.top: parent.top
+            anchors.left: parent.left
+        }
 
-${count}`);
+        Rectangle {
+            width: root.thickness
+            height: root.armLength
+            color: root.accentColor
+            anchors.top: parent.top
+            anchors.left: parent.left
         }
     }
 
-    component CornerFrameImage: Image {
-        source: "../resources/corner-frame.svg"
+    property int count: 2
+
+    Corner {
+        id: topLeft
+        anchors.top: parent.top
+        anchors.left: parent.left
     }
 
-    component CornerSquareImage: Image {
-        source: "../resources/corner-square.svg"
-        antialiasing: false
-        smooth: false
+    Corner {
+        id: topRight
+        anchors.top: parent.top
+        anchors.right: parent.right
+        rotation: 90
     }
 
-    Item {
-        id: contentArea
-        anchors.fill: parent
+    Corner {
+        id: bottomRight
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        rotation: 180
+    }
 
-        // SECTION Top Left
-        CornerFrameImage {
-            anchors {
-                top: contentArea.top
-                left: contentArea.left
-            }
-        }
-        Loader {
-            active: root.count >= 3
-
-            anchors {
-                top: contentArea.top
-                left: contentArea.left
-            }
-            sourceComponent: CornerSquareImage {}
-        }
-
-        // SECTION Top Right
-        CornerFrameImage {
-            anchors {
-                right: contentArea.right
-                top: contentArea.top
-            }
-            rotation: 90
-        }
-        Loader {
-            active: root.count >= 4
-            anchors {
-                top: contentArea.top
-                right: contentArea.right
-            }
-
-            sourceComponent: CornerSquareImage {}
-        }
-
-        // SECTION Bottom Right
-        CornerFrameImage {
-            anchors {
-                bottom: contentArea.bottom
-                right: contentArea.right
-            }
-            rotation: 180
-        }
-        Loader {
-            active: root.count >= 2
-            anchors {
-                bottom: contentArea.bottom
-                right: contentArea.right
-            }
-
-            sourceComponent: CornerSquareImage {}
-        }
-
-        // SECTION Bottom Left
-        CornerFrameImage {
-            anchors {
-                bottom: contentArea.bottom
-                left: contentArea.left
-            }
-            rotation: 270
-        }
-        Loader {
-            active: root.count >= 1
-            anchors {
-                bottom: contentArea.bottom
-                left: contentArea.left
-            }
-
-            sourceComponent: CornerSquareImage {}
-        }
+    Corner {
+        id: bottomLeft
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        rotation: 270
     }
 }
