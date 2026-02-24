@@ -79,8 +79,8 @@ Item {
 
                         Behavior on xScale {
                             NumberAnimation {
-                                duration: 300
-                                easing.type: Easing.InOutCirc
+                                duration: 1000
+                                easing.type: Easing.InOutSine
                             }
                         }
                     }

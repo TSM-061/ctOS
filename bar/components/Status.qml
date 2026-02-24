@@ -57,15 +57,19 @@ Item {
                 name: "MIC"
                 textFont: root.textFont
 
-                readonly property var sink: Pipewire.defaultAudioSource
-                property var volume: (sink?.audio?.volume ?? 0) * 100
+                readonly property var source: Pipewire.defaultAudioSource
 
-                Binding on value {
-                    value: mic.volume
+                value: (source?.audio?.volume ?? 0) * 100
+                suppressed: !!source?.audio?.muted
+
+                onToggleSupressed: {
+                    source.audio.muted = !source.audio.muted;
                 }
 
-                onValueChanged: {
-                    mic.volume = mic.value;
+                onValueScrolled: delta => {
+                    source.audio.muted = false;
+                    const newVolume = source.audio.volume + delta / 100;
+                    source.audio.volume = Utils.clamp(newVolume, 0, 1);
                 }
             }
 

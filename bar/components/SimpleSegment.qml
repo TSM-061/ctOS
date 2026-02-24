@@ -21,11 +21,10 @@ Item {
             id: layout
 
             spacing: 5
-
             Item {
                 id: icon
-                Layout.preferredHeight: text.height
-                Layout.preferredWidth: text.height
+                Layout.preferredHeight: text.height - 2 * Units.vh
+                Layout.preferredWidth: text.height - 2 * Units.vh
             }
 
             Text {

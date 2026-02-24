@@ -4,6 +4,7 @@ import qs.greeter.services
 import qs.greeter.components
 import qs.greeter.config
 import qs.common
+import qs.common.components
 
 Item {
     id: root
@@ -13,23 +14,22 @@ Item {
     focus: true
 
     Keys.onPressed: event => {
-                        // Disable Ctrl + C exiting
-                        if (event.key === Qt.Key_C && (event.modifiers
-                                                       & Qt.ControlModifier)) {
-                            event.accepted = true;
-                        }
+        // Disable Ctrl + C exiting
+        if (event.key === Qt.Key_C && (event.modifiers & Qt.ControlModifier)) {
+            event.accepted = true;
+        }
 
-                        if (Settings.isDebug) {
-                            switch (event.key) {
-                                case Qt.Key_F12:
-                                AuthManager.state = AuthManager.State.Success;
-                                break;
-                                case Qt.Key_Escape:
-                                Qt.quit();
-                                break;
-                            }
-                        }
-                    }
+        if (Settings.isDebug) {
+            switch (event.key) {
+            case Qt.Key_F12:
+                AuthManager.state = AuthManager.State.Success;
+                break;
+            case Qt.Key_Escape:
+                Qt.quit();
+                break;
+            }
+        }
+    }
 
     Image {
         id: backgroundImage
@@ -123,8 +123,7 @@ Item {
             left: splash.left
             right: splash.right
             top: splash.bottom
-            topMargin: 25 * Units.vh + 50 * Units.vh + 85 * Units.vh + 15
-                       * Units.vh
+            topMargin: 25 * Units.vh + 50 * Units.vh + 85 * Units.vh + 15 * Units.vh
             leftMargin: 2
         }
     }
@@ -252,8 +251,7 @@ Item {
             NumberAnimation {
                 target: disclaimer
                 property: "anchors.topMargin"
-                to: 25 * Units.vh + fieldGroup.anchors.topMargin + 85
-                    * Units.vh + 15 * Units.vh
+                to: 25 * Units.vh + fieldGroup.anchors.topMargin + 85 * Units.vh + 15 * Units.vh
                 duration: 500
                 easing.type: Easing.InOutCirc
             }
