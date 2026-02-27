@@ -1,6 +1,8 @@
 import Quickshell.Io
 import QtQuick
 
+import qs.common
+
 Item {
     id: root
     required property string fileName

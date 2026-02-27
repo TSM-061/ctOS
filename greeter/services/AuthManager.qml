@@ -5,6 +5,7 @@ import QtQuick
 
 import qs.greeter.config
 import qs.common
+import qs.greeter.services
 
 Singleton {
     id: authManager
@@ -42,13 +43,13 @@ Singleton {
     Component.onCompleted: {
         if (Settings.isTest) {
             _handler = FakeHandler;
-            TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} Using Protocol::TEST`);
+            TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} using Protocol::TEST`);
         } else if (Settings.isGreetd || Settings.isKiosk) {
             _handler = GreetdHandler;
-            TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} Protocol::CTOS_GREETD`);
+            TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} using Protocol::CTOS_GREETD`);
         } else if (Settings.isLockd) {
             _handler = LockdHandler;
-            TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} Protocol::CTOS_LOCKD`);
+            TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} using Protocol::CTOS_LOCKD`);
         } else {
             throw new Error("No Auth Manager provided: set CTOS_MODE to 'greetd' or 'lockd'");
         }
@@ -74,20 +75,29 @@ Singleton {
     }
 
     function onSuccess() {
+        if (authManager.state !== AuthManager.State.Loading && authManager.state !== AuthManager.State.Ready) {
+            logger.critical("Invalid state transition: manager not ready");
+        }
+
         authManager.state = AuthManager.State.Success;
         TerminalManager.displayMessage(`${authManager._blumePrefix} IDENTITY_VERIFIED // WELCOME BACK`);
         TerminalManager.displayMessage(`${authManager._blumePrefix} Session closed for user(${authManager.user.toUpperCase()})`);
     }
 
     function onFailed() {
-        authManager.state = AuthManager.State.Failed;
-        TerminalManager.displayMessage(`${authManager._sentinelPrefix} Authentication Failed (TraceId: ${Faker.randomHexString(16)})`);
+        if (authManager.state !== AuthManager.State.Loading && authManager.state !== AuthManager.State.Ready) {
+            logger.critical("Invalid state transition: manager not ready");
+        }
 
-        startTimer.start();
+        authManager.state = AuthManager.State.Failed;
+
+        resetTimer.start();
+
+        TerminalManager.displayMessage(`${authManager._sentinelPrefix} Authentication Failed (TraceId: ${Faker.randomHexString(16)})`);
     }
 
     Timer {
-        id: startTimer
+        id: resetTimer
         interval: 500
         onTriggered: {
             authManager._handler.start();
@@ -96,7 +106,7 @@ Singleton {
 
     function respond(password: string) {
         if (authManager.state !== AuthManager.State.Ready) {
-            logger.error("Auth Manager not ready, response discarded.");
+            logger.error("Invalid call: manager not ready");
             return;
         }
 

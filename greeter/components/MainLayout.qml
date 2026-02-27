@@ -139,6 +139,15 @@ Item {
         }
     }
 
+    Menu {
+        id: menu
+        anchors {
+            top: root.top
+            topMargin: root.height * 0.05
+            horizontalCenter: root.horizontalCenter
+        }
+    }
+
     Terminal {
         id: terminal
         logModel: TerminalManager.logModel
