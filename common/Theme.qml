@@ -12,6 +12,7 @@ Singleton {
     readonly property color gray200: "#D9D9D9"
     readonly property color gray300: "#c3c3c3"
     readonly property color gray500: "#7a7a7a"
+    readonly property color gray700: "#202020"
     readonly property color gray800: "#0E0E0E"
 
     readonly property color accentGreen: "#1bfd9c"
@@ -20,6 +21,7 @@ Singleton {
     // SECTION Theme
 
     readonly property color background: gray800
+    readonly property color backgroundBright: gray700
 
     readonly property color ctosGray: gray200
 

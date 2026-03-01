@@ -139,15 +139,6 @@ Item {
         }
     }
 
-    Menu {
-        id: menu
-        anchors {
-            top: root.top
-            topMargin: root.height * 0.05
-            horizontalCenter: root.horizontalCenter
-        }
-    }
-
     Terminal {
         id: terminal
         logModel: TerminalManager.logModel
@@ -161,12 +152,12 @@ Item {
         width: 94.5 * terminal.rem
     }
 
-    Status {
-        id: status
+    Session {
+        id: session
         anchors {
             right: root.right
             top: root.top
-            rightMargin: (root.height * 0.0375) - status.barWidth  // visual fix
+            rightMargin: root.height * 0.0375
             topMargin: root.height * 0.046
         }
     }

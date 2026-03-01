@@ -27,7 +27,7 @@ Singleton {
         }
     }
 
-    readonly property SettingsDto dto: cm.adapter.settings
+    readonly property SettingsDto dto: cm.adapter.settings // qmllint disable missing-property
 
     Connections {
         target: DesktopService

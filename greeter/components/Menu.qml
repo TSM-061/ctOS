@@ -4,30 +4,45 @@ import QtQuick
 import qs.common
 import qs.greeter.services
 
-ListView {
-    id: view
+Rectangle {
 
-    width: 200
-    height: 300
+    ListView {
+        id: view
 
-    // currentIndex: 0
+        width: 300
+        height: 300
 
-    model: DesktopService.sessions
+        highlight: Rectangle {
+            color: Theme.ctosGray
+        }
 
-    spacing: 5 * Units.vh
+        model: DesktopService.sessions
 
-    delegate: Text {
-        required property int index
-        required property var modelData
+        spacing: 5 * Units.vh
 
-        property bool isSelected: index === view.currentIndex
+        delegate: Text {
+            id: option
+            required property int index
+            required property var modelData
 
-        text: `${isSelected ? "> " : "  "}${modelData.name || "n/a"}`
-        color: Theme.textPrimary
+            property bool isSelected: index === view.currentIndex
 
-        font {
-            pixelSize: 18
-            family: Theme.fontFamily
+            width: view.width
+            text: modelData.name || "n/a"
+            color: option.isSelected ? Theme.background : Theme.textPrimary
+
+            font {
+                pixelSize: 18
+                family: Theme.fontFamily
+            }
+
+            TapHandler {
+                onTapped: view.currentIndex = option.index
+            }
+
+            HoverHandler {
+                id: hover
+            }
         }
     }
 }
