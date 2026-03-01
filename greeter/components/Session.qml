@@ -86,6 +86,7 @@ RowLayout {
         width: height
 
         Image {
+            // TODO add proper profile picture
             source: "../resources/user.svg"
             anchors.fill: parent
         }

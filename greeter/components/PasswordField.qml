@@ -35,33 +35,22 @@ TextField {
         font: passwordField.font
         text: "▁"
 
-        Timer {
-            id: blinkDelayTimer
-            interval: 500
-            onTriggered: {
+        readonly property bool canBlink: passwordField.activeFocus && passwordField.enabled
+
+        onCanBlinkChanged: {
+            if (canBlink) {
                 blinkAnimation.running = true;
+            } else {
+                blinkAnimation.running = false;
+                cursor.opacity = 0;
             }
         }
 
         Connections {
             target: passwordField
 
-            function onEnabledChanged() {
-                if (passwordField.enabled) {
-                    blinkDelayTimer.running = true;
-                    // don't interrupt mid animation
-                } else {
-                    blinkDelayTimer.running = false;
-                    blinkAnimation.running = false;
-
-                    cursor.opacity = 0;
-                }
-            }
-
             function onTextEdited() {
-                blinkDelayTimer.restart();
-                blinkAnimation.running = false;
-
+                blinkAnimation.restart();
                 cursor.opacity = 1;
             }
         }

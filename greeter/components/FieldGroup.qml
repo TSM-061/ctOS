@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import qs.common
+import qs.common.services
 import qs.greeter.components
 import qs.greeter.config
 import qs.greeter.services
@@ -35,7 +36,7 @@ ColumnLayout {
             id: userText
 
             color: Theme.textPrimary
-            initialText: AuthManager.user.toUpperCase()
+            initialText: "PASSPHRASES"
 
             font {
                 pixelSize: 14
@@ -70,9 +71,17 @@ ColumnLayout {
         onAccepted: {
             AuthManager.respond(passwordField.text);
         }
+        onActiveFocusChanged: {
+            if (activeFocus) {
+                FocusManager.requestFocus(passwordField);
+            }
+        }
         Component.onCompleted: {
+            FocusManager.registerTarget(passwordField, 0);
             passwordField.forceActiveFocus();
         }
+
+        focus: FocusManager.current?.item === passwordField
 
         Rectangle {
             id: progress
@@ -163,8 +172,7 @@ ColumnLayout {
             id: loginText
 
             text: "LOGIN"
-            visible: AuthManager.state === AuthManager.State.Loading ? false :
-                                                                       true
+            visible: AuthManager.state === AuthManager.State.Loading ? false : true
             color: Theme.background
 
             anchors {

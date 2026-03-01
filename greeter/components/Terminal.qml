@@ -53,7 +53,6 @@ Column {
         height: terminal.lineHeight * terminal.maxLines
 
         boundsBehavior: Flickable.StopAtBounds
-        interactive: false
         verticalLayoutDirection: ListView.TopToBottom
 
         Behavior on contentY {
@@ -110,6 +109,13 @@ Column {
         Component.onCompleted: {
             TerminalManager.notifyReady();
         }
+    }
+
+    TextInput {
+        height: terminal.lineHeight
+        width: logView.width
+
+        color: Theme.textPrimary
     }
 
     Accents {
