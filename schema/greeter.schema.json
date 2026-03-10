@@ -4,7 +4,7 @@
   "title": "ctOS Greeter Config",
   "type": "object",
   "properties": {
-    "user": { "type": "string", "description": "The default user." },
+    "defaultUser": { "type": "string", "description": "The default user." },
     "monitor": {
       "type": "string",
       "description": "The primary monitor with login field."

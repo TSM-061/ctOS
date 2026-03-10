@@ -36,7 +36,7 @@ ColumnLayout {
             id: userText
 
             color: Theme.textPrimary
-            initialText: "PASSPHRASES"
+            initialText: "PASSPHRASE"
 
             font {
                 pixelSize: 14
@@ -50,7 +50,6 @@ ColumnLayout {
 
         property int progressPercentage: 0
 
-        enabled: AuthManager.state === AuthManager.State.Ready
         Layout.fillWidth: true
         Layout.preferredHeight: 40 * Units.vh
         Layout.alignment: Qt.AlignCenter
@@ -67,21 +66,25 @@ ColumnLayout {
                 return Theme.textPrimary;
             }
         }
+        enabled: AuthManager.state === AuthManager.State.Ready
         z: 5
+
         onAccepted: {
             AuthManager.respond(passwordField.text);
         }
+
         onActiveFocusChanged: {
             if (activeFocus) {
                 FocusManager.requestFocus(passwordField);
             }
         }
-        Component.onCompleted: {
-            FocusManager.registerTarget(passwordField, 0);
-            passwordField.forceActiveFocus();
-        }
 
-        focus: FocusManager.current?.item === passwordField
+        Component.onCompleted: {
+            FocusManager.registerTarget(passwordField, {
+                tabIndex: 0
+            });
+            FocusManager.requestFocus(passwordField);
+        }
 
         Rectangle {
             id: progress

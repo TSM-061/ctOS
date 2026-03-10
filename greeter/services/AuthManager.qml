@@ -29,7 +29,7 @@ Singleton {
         Finish
     }
 
-    property string user: Settings.user
+    property string user: SessionManager.activeUser
 
     property int state: AuthManager.State.Inactive
 

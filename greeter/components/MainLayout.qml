@@ -4,6 +4,7 @@ import qs.greeter.services
 import qs.greeter.components
 import qs.greeter.config
 import qs.common
+import qs.common.services
 import qs.common.components
 
 Item {
@@ -16,6 +17,11 @@ Item {
     Keys.onPressed: event => {
         // Disable Ctrl + C exiting
         if (event.key === Qt.Key_C && (event.modifiers & Qt.ControlModifier)) {
+            event.accepted = true;
+        }
+
+        if (event.key === Qt.Key_Tab) {
+            FocusManager.focusNext();
             event.accepted = true;
         }
 
@@ -278,10 +284,6 @@ Item {
         id: exitAnimation
         running: AuthManager.state === AuthManager.State.Success
 
-        ScriptAction {
-            script: accents.state = "field_group"
-        }
-
         PauseAnimation {
             duration: 200
         }
@@ -319,7 +321,6 @@ Item {
         function onProgressBarMidway() {
             time.start();
             device.start();
-            status.start();
         }
 
         function onRevealFinished() {

@@ -5,10 +5,10 @@ import qs.common
 Item {
     id: config
 
-    required property string fileName
+    required property string path
     required property JsonAdapter adapter
 
-    property bool global: false
+    property bool writeEnabled: true
 
     Logger {
         id: logger
@@ -18,14 +18,11 @@ Item {
     FileView {
         id: fileView
 
-        blockWrites: config.global
-
         // qmllint disable missing-type
         adapter: config.adapter
+        path: config.path
 
-        path: `${config.global ? Paths.globalConfigDir : Paths.localConfigDir}/${config.fileName}.json`
-
-        onAdapterChanged: writeAdapter()
+        onAdapterChanged: !fileView.path.startsWith("/etc") && config.writeEnabled ? writeAdapter() : () => {}
 
         onLoadFailed: function (error) {
             if (blockWrites && error === FileViewError.FileNotFound) {

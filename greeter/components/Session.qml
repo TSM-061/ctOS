@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 
 import qs.common
+import qs.greeter.components
+import qs.greeter.services
 
 RowLayout {
     spacing: 0
@@ -41,9 +43,10 @@ RowLayout {
                             rightMargin: 10 * Units.vh
                         }
 
-                        Text {
+                        Typewriter {
+                            id: typewriter
                             color: Theme.textPrimary
-                            text: "TOMTOM"
+                            initialText: SessionManager.activeUser.toUpperCase()
                             font.family: Theme.fontFamily
                             font.pixelSize: 14
                         }
@@ -89,6 +92,13 @@ RowLayout {
             // TODO add proper profile picture
             source: "../resources/user.svg"
             anchors.fill: parent
+        }
+    }
+
+    Connections {
+        target: SessionManager
+        function onActiveUserChanged() {
+            typewriter.overwrite(SessionManager.activeUser.toUpperCase());
         }
     }
 }

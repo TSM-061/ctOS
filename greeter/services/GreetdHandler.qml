@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Services.Greetd
 import QtQuick
 
+import qs.greeter.services
 import qs.greeter.config
 import qs.common
 
@@ -25,19 +26,32 @@ Singleton {
 
         function onAuthMessage(message) {
             // requesting password
-            logger.info("Credentials requested...");
+            logger.info("Credentials requested.");
             handler.ready();
         }
 
         function onAuthFailure(message) {
             // password is wrong
-            logger.info("// AUTH_ERROR");
+            logger.info("Authentication failed.");
             handler.failed();
         }
 
         function onReadyToLaunch() {
             // password is correct
+            logger.info("Authentication success.");
             handler.success();
+        }
+    }
+
+    Connections {
+        target: SessionManager
+
+        function onActiveUserChanged() {
+            if (Greetd.state === GreetdState.Authenticating) {
+                logger.info(`User changed, cancelling active session.`);
+                Greetd.cancelSession();
+            }
+            sessionStarter.start();
         }
     }
 
@@ -56,8 +70,8 @@ Singleton {
                 return;
             }
 
-            logger.info(`Initializing session...(user:${AuthManager.user})`);
-            Greetd.createSession(AuthManager.user);
+            logger.info(`Created session (user:${SessionManager.activeUser})`);
+            Greetd.createSession(SessionManager.activeUser);
 
             sessionStarter.stop();
         }
@@ -72,9 +86,10 @@ Singleton {
     }
 
     function finish() {
-        logger.info(`Launching: ${Settings.launchCommand.join(" ")}`);
+        const command = SessionManager.getLaunchCommand();
+        logger.info(`Launching: ${command.join(" ")}`);
 
-        Greetd.launch(Settings.launchCommand);
+        Greetd.launch(command);
         Quickshell.execDetached(Settings.exitCommand);
     }
 }

@@ -1,0 +1,134 @@
+pragma Singleton
+
+import QtQuick
+import Quickshell
+import qs.greeter.services
+
+Singleton {
+    id: commandManager
+
+    readonly property int maxHistory: 15
+    property var _history: []
+    property int _historyIndex: -1
+
+    function sendCommand(input: string) {
+        const raw = input.trim();
+        if (!raw) {
+            return;
+        }
+
+        if (_history[0] !== raw)
+            _history.unshift(raw);
+        if (_history.length > maxHistory)
+            _history.pop();
+        _historyIndex = -1;
+
+        const [verb, ...args] = raw.split(/\s+/);
+        const cmd = verb.toLowerCase();
+
+        switch (cmd) {
+        case "change":
+            _handleChange(args);
+            break;
+        case "chusr":
+            _handleUserChange(args.join(" "));
+            break;
+        case "chdesk":
+            _handleDesktopChange(args.join(" "));
+            break;
+        case "list":
+            _handleList(args);
+            break;
+        case "help":
+            _showHelp();
+            break;
+        default:
+            _err(`unknown command '${cmd}'`);
+        }
+    }
+
+    // Returns the next older history entry (Up arrow)
+    function previousHistory(): string {
+        if (_history.length === 0)
+            return "";
+        _historyIndex = Math.min(_historyIndex + 1, _history.length - 1);
+        return _history[_historyIndex];
+    }
+
+    // Returns the next newer history entry, or "" when past the newest (Down arrow)
+    function nextHistory(): string {
+        if (_historyIndex <= 0) {
+            _historyIndex = -1;
+            return "";
+        }
+        _historyIndex--;
+        return _history[_historyIndex];
+    }
+
+    function _handleChange(args) {
+        const noun = args[0]?.toLowerCase();
+        const value = args.slice(1).join(" ");
+
+        if (!noun || !value)
+            return _err("usage: change <user|desktop> <name|index>");
+
+        if (noun === "user")
+            _handleUserChange(value);
+        else if (noun === "desktop" || noun === "desk")
+            _handleDesktopChange(value);
+        else
+            _err(`unknown target '${noun}'`);
+    }
+
+    function _handleUserChange(value: string): void {
+        if (!value)
+            return _err("username or index required");
+
+        if (SessionManager.setUser(value))
+            _out(`user -> ${SessionManager.activeUser}`);
+        else
+            _err(`user '${value}' not found`);
+    }
+
+    function _handleDesktopChange(value: string): void {
+        if (!value)
+            return _err("desktop name or index required");
+
+        if (SessionManager.setDesktop(value))
+            _out(`desktop -> ${SessionManager.activeDesktop.name}`);
+        else
+            _err(`desktop '${value}' not found`);
+    }
+
+    function _handleList(args) {
+        const noun = args[0]?.toLowerCase();
+        if (noun === "users") {
+            const messages = SessionManager.users.map((u, i) => `${i + 1}. ${u.username}`);
+            TerminalManager.displayMessages(messages, {
+                instant: true
+            });
+        } else if (noun === "desktops" || noun === "desk") {
+            const messages = SessionManager.desktops.map((s, i) => `${i + 1}. ${s.name}`);
+            TerminalManager.displayMessages(messages, {
+                instant: true
+            });
+        } else {
+            _err("usage: list <users|desktops>");
+        }
+    }
+
+    function _showHelp() {
+        _out("commands: change, chusr, chdesk, list, help");
+    }
+
+    function _out(msg: string, prefix = "") {
+        const line = prefix ? `${prefix} ${msg}` : msg;
+        TerminalManager.displayMessage(line, {
+            instant: true
+        });
+    }
+
+    function _err(msg: string, prefix = "ERR") {
+        _out(`${msg}`, prefix);
+    }
+}

@@ -1,12 +1,15 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Layouts
+import QtQml.Models
 
 import qs.greeter.services
 import qs.common
+import qs.common.services
 import qs.common.components
 import qs.greeter.config
 
-Column {
+ColumnLayout {
     id: terminal
 
     property int margins: 10
@@ -31,7 +34,7 @@ Column {
 
     required property var logModel
 
-    spacing: 8 * Units.vh
+    spacing: 15 * Units.vh
 
     TextMetrics {
         id: textMetrics
@@ -42,20 +45,19 @@ Column {
     ListView {
         id: logView
 
+        property bool isFirstPrompt: true
+
         model: terminal.logModel
         clip: true
 
-        anchors {
-            left: parent.left
-            right: parent.right
-        }
-
-        height: terminal.lineHeight * terminal.maxLines
+        Layout.fillWidth: true
+        Layout.preferredHeight: terminal.lineHeight * terminal.maxLines
 
         boundsBehavior: Flickable.StopAtBounds
         verticalLayoutDirection: ListView.TopToBottom
 
         Behavior on contentY {
+            id: scrollBehavior
             NumberAnimation {
                 duration: 50
                 easing.type: Easing.OutCubic
@@ -68,40 +70,149 @@ Column {
             height: logView.height
         }
 
-        delegate: Item {
-            width: logView.width
-            height: entry.implicitHeight
+        Connections {
+            target: terminal.logModel
 
-            required property string message
+            function onCountChanged() {
+                Qt.callLater(() => {
+                    logView.contentY = -logView.height + terminal.logModel.count * terminal.lineHeight;
+                });
+            }
+        }
 
-            Text {
-                id: entry
+        delegate: DelegateChooser {
+            role: "type"
 
-                color: Theme.textPrimaryDimmer
-                font: terminal.font
+            DelegateChoice {
+                roleValue: "output"
 
-                lineHeight: terminal.lineHeight
-                lineHeightMode: Text.FixedHeight
-                wrapMode: Text.Wrap
+                delegate: Item {
+                    width: logView.width
+                    height: terminal.lineHeight
 
-                width: logView.width
+                    required property string message
+                    required property string type
 
-                text: {
-                    if (parent.message.startsWith("---")) {
-                        const stripped = parent.message.replace(/-/g, "");
+                    Text {
+                        id: entry
 
-                        const spareRoom = Math.floor(terminal.width / textMetrics.advanceWidth) - 4 - (stripped.length);
+                        color: Theme.textPrimaryDimmer
+                        font: terminal.font
 
-                        const hyphenCount = Math.floor(spareRoom / 2);
+                        lineHeight: terminal.lineHeight
+                        lineHeightMode: Text.FixedHeight
+                        wrapMode: Text.Wrap
 
-                        return `${("-").repeat(hyphenCount)}  ${stripped}  ${("-").repeat(hyphenCount)}`;
+                        width: logView.width
+
+                        text: {
+                            if (parent.message.startsWith("---")) {
+                                const stripped = parent.message.replace(/-/g, "");
+
+                                const spareRoom = Math.floor(terminal.width / textMetrics.advanceWidth) - 4 - (stripped.length);
+
+                                const hyphenCount = Math.floor(spareRoom / 2);
+
+                                return `${("-").repeat(hyphenCount)}  ${stripped}  ${("-").repeat(hyphenCount)}`;
+                            }
+
+                            return `${parent.message}`;
+                        }
+                    }
+                }
+            }
+
+            DelegateChoice {
+                roleValue: "prompt"
+
+                delegate: Row {
+                    id: promptRow
+                    width: logView.width
+                    height: terminal.lineHeight
+
+                    spacing: 0
+
+                    required property string animateTo
+
+                    property int charIndex: 0
+
+                    NumberAnimation {
+                        id: typewriterAnim
+                        target: promptRow
+                        property: "charIndex"
+                        from: 0
+                        to: promptRow.animateTo.length
+                        duration: promptRow.animateTo.length * 60
+                        easing.type: Easing.Linear
                     }
 
-                    return `» ${parent.message}`;
-                }
+                    Component.onCompleted: {
+                        if (animateTo !== "")
+                            typewriterAnim.start();
+                    }
 
-                onImplicitHeightChanged: {
-                    logView.contentY += implicitHeight;
+                    Text {
+                        id: terminalPrompt
+
+                        text: "» "
+                        color: Theme.textPrimaryDim
+                        font: terminal.font
+                        height: parent.height
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    TextInput {
+                        id: terminalInput
+                        objectName: "terminalInput"
+
+                        height: parent.height
+                        width: parent.width - terminalPrompt.width
+
+                        color: Theme.textPrimaryDim
+                        font: terminal.font
+
+                        enabled: promptRow.animateTo === ""
+
+                        Binding {
+                            target: terminalInput
+                            property: "text"
+                            value: promptRow.animateTo.substring(0, promptRow.charIndex)
+                            when: promptRow.animateTo !== ""
+                        }
+
+                        onAccepted: {
+                            CommandManager.sendCommand(terminalInput.text);
+
+                            enabled = false;
+                            logView.isFirstPrompt = false;
+                        }
+
+                        Keys.onUpPressed: {
+                            terminalInput.text = CommandManager.previousHistory();
+                            terminalInput.cursorPosition = terminalInput.text.length;
+                        }
+
+                        Keys.onDownPressed: {
+                            terminalInput.text = CommandManager.nextHistory();
+                            terminalInput.cursorPosition = terminalInput.text.length;
+                        }
+
+                        onActiveFocusChanged: {
+                            if (activeFocus) {
+                                FocusManager.requestFocus(terminalInput);
+                            }
+                        }
+
+                        Component.onCompleted: {
+                            FocusManager.registerTarget(terminalInput, {
+                                tabIndex: 1
+                            });
+
+                            if (!logView.isFirstPrompt) {
+                                FocusManager.requestFocus(terminalInput);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -111,25 +222,14 @@ Column {
         }
     }
 
-    TextInput {
-        height: terminal.lineHeight
-        width: logView.width
-
-        color: Theme.textPrimary
-    }
-
     Accents {
         id: accents
 
         opacityDuration: 200
         translateDuration: 300
 
-        anchors {
-            left: parent.left
-            right: parent.right
-        }
-
-        height: versionBorder.height
+        Layout.fillWidth: true
+        Layout.preferredHeight: versionBorder.height
 
         SequentialAnimation {
             id: accentAnimation

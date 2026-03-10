@@ -8,6 +8,7 @@ NAMESPACE="ctos"
 # main directories
 CONFIG_DIR="/etc/$NAMESPACE"
 INSTALL_DIR="/opt/$NAMESPACE"
+STATE_DIR="/var/lib/$NAMESPACE"
 
 declare -l COMPOSITOR="" # lowercase only
 
@@ -37,44 +38,64 @@ detect_compositor() {
   fi
 }
 
+setup_state_dir_for_greetd() {
+  if [[ -d "$STATE_DIR" ]]; then
+    echo "[ITEM]   found: $STATE_DIR (skipping)"
+    return 0
+  fi
+
+  local cfg="/etc/greetd/config.toml"
+
+  if [[ ! -f "$cfg" ]]; then
+    echo "[!][ERROR] /etc/greetd/config not found; cannot set up $STATE_DIR"
+    return 0
+  fi
+
+  local line=$(grep -E '^[[:space:]]*user[[:space:]]*=' "$cfg" | head -n1 || true)
+  if [[ -z "$line" ]]; then
+    echo "[ITEM]     n/a: $STATE_DIR (no user in /etc/greetd/config)"
+    return 0
+  fi
+
+  local user=$(printf '%s\n' "$line" | sed -E 's/^[[:space:]]*user[[:space:]]*=[[:space:]]*"?([^"]*)"?/\1/')
+
+  sudo mkdir -p "$STATE_DIR"
+  sudo chown "$user":"$user" "$STATE_DIR"
+  echo "[ITEM] added: $STATE_DIR (owner: $user)"
+}
+
 generate_greeter_config() {
-  local user="$1"
-  local monitor="$2"
+  local monitor="$1"
 
   cat <<EOF
 {
-  "\$schema": "https://raw.githubusercontent.com/TSM-061/ctOS/main/schema/greeter.schema.json",
-  "user": "$user",
-  "monitor": "$monitor",
-  "fontFamily": "JetBrainsMono Nerd Font",
-  "fakeIdentity": {
-    "id": "XYZ-843",
-    "class": "L5_PROV",
-    "fullName": "Blume Admin"
-  },
-  "fakeStatus": {
-    "env": "Workstation",
-    "node": "109.389.013.301"
-  },
-  "modes": {
-    "greetd": {
-      "animations": "all",
-      "exit": ["uwsm", "stop"],
-      "launch":["uwsm", "start", "$COMPOSITOR.desktop"] 
-    },
-    "lockd": {
-      "animations": "reduced"
-    },
-    "test": {
-      "animations": "all"
+  "general": {
+    "fontFamily": "JetBrainsMono Nerd Font",
+    "animations": "all",
+    "monitor": "$monitor",
+    "exitOverride": null,
+    "launchOverride": null,
+    "modes": {
+      "greetd": {
+        "animations": "all",
+        "monitor": null
+      },
+      "lockd": {
+        "animations": "reduced",
+        "monitor": null
+      },
+      "test": {
+        "animations": "all",
+        "monitor": null
+      }
     }
   }
 }
 EOF
 }
 
-ensure_exists() {
-  local input="$1" # either filepath or string
+install_output() {
+  local contents="$1"
   local target_path="$2"
 
   if [[ -f "$target_path" ]]; then
@@ -83,20 +104,6 @@ ensure_exists() {
   fi
 
   mkdir -p "$(dirname "$target_path")"
-
-  local contents=""
-
-  if [[ -d "$(dirname "$input")" ]]; then
-    if [[ ! -f "$input" ]]; then
-      echo
-      echo "[!][ERROR] file not found '$input'"
-      exit 1
-    else
-      contents=$(cat "$input")
-    fi
-  else
-    contents="$input"
-  fi
 
   if [[ -z "$contents" ]]; then
     echo
@@ -112,6 +119,27 @@ ensure_exists() {
   fi
 
   echo "error: $target_path"
+}
+
+install_file() {
+  local source_path="$1"
+  local target_path="$2"
+
+  if [[ -f "$target_path" ]]; then
+    echo "[ITEM]   found: $target_path (skipping)"
+    return 0
+  fi
+
+  if [[ ! -f "$source_path" ]]; then
+    echo
+    echo "[!][ERROR] file not found '$source_path'"
+    exit 1
+  fi
+
+  local contents
+  contents=$(cat "$source_path")
+
+  install_output "$contents" "$target_path"
 }
 
 function detect_monitor() {
@@ -177,7 +205,7 @@ function install_greeter_compositor_config() {
   fi
 
   if [[ -n "$config_src" ]]; then
-    ensure_exists "$config_src" "$config_dest"
+    install_file "$config_src" "$config_dest"
     return 0
   fi
 }
@@ -213,7 +241,9 @@ fi
 
 echo
 
-ensure_exists "$(generate_greeter_config "$SELECTED_USER" "$SELECTED_MONITOR")" "$GREETER_CONFIG_FILEPATH"
+install_output "$(generate_greeter_config "$SELECTED_MONITOR")" "$GREETER_CONFIG_FILEPATH"
+
+setup_state_dir_for_greetd
 
 install_greeter_compositor_config
 

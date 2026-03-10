@@ -6,34 +6,47 @@ import Quickshell
 Singleton {
     id: focusManager
 
-    readonly property var current: _currentEntry?.item ?? null
+    readonly property var current: _currentTarget?.item
 
-    property var _currentEntry: null
+    property var _currentTarget: null
     property var _targets: []
 
-    function registerTarget(item: var, tabIndex: int) {
+    onCurrentChanged: {
+        if (current) {
+            current.forceActiveFocus();
+        }
+    }
+
+    function _getFocusableTargets() {
+        return _targets.filter(t => t.item.visible && t.item.enabled);
+    }
+
+    function registerTarget(item: var, options = {}) {
+        const {
+            tabIndex = 0
+        } = options;
+
         _targets.push({
             item: item,
             tabIndex: tabIndex
         });
+
         _targets.sort((a, b) => a.tabIndex - b.tabIndex);
-        console.log(`[FocusManager] Registered target at tabIndex ${tabIndex}. Total targets: ${_targets.length}`);
     }
 
     function requestFocus(item: var) {
-        _currentEntry = _targets.find(t => t.item === item) ?? null;
-        console.log(`[FocusManager] Focus changed -> tabIndex: ${_currentEntry?.tabIndex ?? "none"}`);
+        _currentTarget = _targets.find(t => t.item.toString() === item.toString()) ?? null;
     }
 
     function focusNext() {
-        const index = _targets.findIndex(t => t.item === _currentEntry?.item);
-        _currentEntry = _targets[(index + 1) % _targets.length] ?? null;
-        console.log(`[FocusManager] focusNext -> tabIndex: ${_currentEntry?.tabIndex ?? "none"}`);
+        const focusable = _getFocusableTargets();
+        const index = focusable.findIndex(t => t.item.toString() === _currentTarget?.item.toString());
+        _currentTarget = focusable[(index + 1) % focusable.length] ?? null;
     }
 
     function focusPrevious() {
-        const index = _targets.findIndex(t => t.item === _currentEntry?.item);
-        _currentEntry = _targets[(index - 1 + _targets.length) % _targets.length] ?? null;
-        console.log(`[FocusManager] focusPrevious -> tabIndex: ${_currentEntry?.tabIndex ?? "none"}`);
+        const focusable = _getFocusableTargets();
+        const index = focusable.findIndex(t => t.item.toString() === _currentTarget?.item.toString());
+        _currentTarget = focusable[(index - 1 + focusable.length) % focusable.length] ?? null;  // prevent negative remainder
     }
 }
