@@ -28,23 +28,33 @@ Singleton {
         return !isNaN(oneBasedIdx) ? (list[oneBasedIdx - 1] ?? null) : (list.find(item => item[key].toLowerCase().includes(value.toLowerCase())) ?? null);
     }
 
-    function setUser(value: string): bool {
+    function setUser(value: string, saveDefault = false): bool {
         const found = sessionManager._findIn(sessionManager.users, value, "username");
 
         if (!found)
             return false;
 
         sessionManager.activeUser = found.username;
+
+        if (saveDefault) {
+            Settings.defaultUser = found.username;
+        }
+
         return true;
     }
 
-    function setDesktop(value: string): bool {
+    function setDesktop(value: string, saveDefault = false): bool {
         const found = sessionManager._findIn(sessionManager.desktops, value, "name");
 
         if (!found)
             return false;
 
         sessionManager.activeDesktop = found;
+
+        if (saveDefault) {
+            Settings.defaultDesktop = found.name;
+        }
+
         return true;
     }
 

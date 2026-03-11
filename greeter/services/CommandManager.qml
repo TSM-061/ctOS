@@ -23,10 +23,9 @@ Singleton {
             _history.pop();
         _historyIndex = -1;
 
-        const [verb, ...args] = raw.split(/\s+/);
-        const cmd = verb.toLowerCase();
+        const [command, ...args] = raw.split(/\s+/);
 
-        switch (cmd) {
+        switch (command.toLowerCase()) {
         case "change":
             _handleChange(args);
             break;
@@ -43,7 +42,7 @@ Singleton {
             _showHelp();
             break;
         default:
-            _err(`unknown command '${cmd}'`);
+            _err(`unknown command '${command}'`);
         }
     }
 
@@ -70,7 +69,7 @@ Singleton {
         const value = args.slice(1).join(" ");
 
         if (!noun || !value)
-            return _err("usage: change <user|desktop> <name|index>");
+            return _err("usage: change <user|desktop> <new_value>");
 
         if (noun === "user")
             _handleUserChange(value);
