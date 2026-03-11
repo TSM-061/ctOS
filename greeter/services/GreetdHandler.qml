@@ -5,7 +5,6 @@ import Quickshell.Services.Greetd
 import QtQuick
 
 import qs.greeter.services
-import qs.greeter.config
 import qs.common
 
 Singleton {
@@ -51,7 +50,8 @@ Singleton {
                 logger.info(`User changed, cancelling active session.`);
                 Greetd.cancelSession();
             }
-            sessionStarter.start();
+
+            handler.start();
         }
     }
 
@@ -86,10 +86,16 @@ Singleton {
     }
 
     function finish() {
-        const command = SessionManager.getLaunchCommand();
-        logger.info(`Launching: ${command.join(" ")}`);
+        const launchCommand = SessionManager.getLaunchCommand();
+        const exitCommand = SessionManager.getExitCommand();
 
-        Greetd.launch(command);
-        Quickshell.execDetached(Settings.exitCommand);
+        logger.info(`Launching: ${launchCommand.join(" ")}`);
+        logger.info(`Exiting Greeter: ${exitCommand.join(" ") || "<none>"}`);
+
+        Greetd.launch(launchCommand);
+
+        if (exitCommand.length) {
+            Quickshell.execDetached(exitCommand);
+        }
     }
 }

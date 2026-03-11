@@ -73,20 +73,20 @@ generate_greeter_config() {
     "fontFamily": "JetBrainsMono Nerd Font",
     "animations": "all",
     "monitor": "$monitor",
-    "exitOverride": null,
-    "launchOverride": null,
+    "exitOverride": [],
+    "launchOverride": [],
     "modes": {
       "greetd": {
         "animations": "all",
-        "monitor": null
+        "monitor": ""
       },
       "lockd": {
         "animations": "reduced",
-        "monitor": null
+        "monitor": ""
       },
       "test": {
         "animations": "all",
-        "monitor": null
+        "monitor": ""
       }
     }
   }

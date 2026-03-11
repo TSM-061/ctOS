@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Io
 
 import qs.common
-import qs.greeter.services
 
 Singleton {
     id: root
@@ -15,15 +14,13 @@ Singleton {
         name: "settings"
     }
 
-    property string modeKey: Object.keys(root.modes).find(key => root.modes[key] === root.mode)
-
     ConfigManager {
         id: globalConfig
         path: Paths.globalConfigPath("greeter.config")
 
         adapter: JsonAdapter {
             id: globalAdapter
-            property SettingsDto general: SettingsDto {}
+            property GeneralDto general: GeneralDto {}
         }
     }
 
@@ -34,15 +31,16 @@ Singleton {
 
         adapter: JsonAdapter {
             id: stateAdapter
-            property string defaultUser: ""
-            property string defaultDesktop: ""
+            property StateDto session: StateDto {}
         }
     }
 
-    property string defaultUser: stateAdapter.defaultUser
-    property string defaultDesktop: stateAdapter.defaultDesktop
+    readonly property GeneralDto general: globalAdapter.general
 
-    readonly property SettingsDto general: globalAdapter.general
+    property string defaultUser: stateAdapter.session.defaultUser
+    property string defaultDesktop: stateAdapter.session.defaultDesktop
+
+    readonly property string modeKey: Object.keys(root.modes).find(key => root.modes[key] === root.mode)
 
     readonly property int mode: {
         const key = (Env.get("MODE") || "").toLowerCase();
@@ -62,7 +60,7 @@ Singleton {
     readonly property bool isLockd: mode === modes.lockd
     readonly property bool isKiosk: mode === modes.kiosk
 
-    readonly property string monitor: general.modes[modeKey].monitor || general.monitor
+    readonly property string monitor: general.modes[modeKey].monitor || general.monitor || Quickshell.screens[0].name
     readonly property string fontFamily: general.fontFamily
 
     enum AnimationMode {
@@ -72,7 +70,7 @@ Singleton {
     }
 
     readonly property int animationMode: {
-        const value = general.modes[modeKey].animations.toLowerCase() || general.animations.toLowerCase();
+        const value = (general.modes[modeKey].animations || general.animations || "all").toLowerCase();
 
         switch (value) {
         case "none":

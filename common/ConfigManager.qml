@@ -25,7 +25,7 @@ Item {
         onAdapterChanged: !fileView.path.startsWith("/etc") && config.writeEnabled ? writeAdapter() : () => {}
 
         onLoadFailed: function (error) {
-            if (blockWrites && error === FileViewError.FileNotFound) {
+            if (error === FileViewError.FileNotFound) {
                 logger.critical(`Missing config file: ${fileView.path}`);
             }
         }

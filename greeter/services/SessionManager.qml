@@ -13,11 +13,11 @@ Singleton {
 
     property var users: []
     property string activeUser: Settings.defaultUser || sessionManager._foundUser
-    property string _foundUser: ""
+    property var _foundUser: null
 
     property var desktops: []
     property var activeDesktop: Settings.defaultDesktop || sessionManager._foundDesktop
-    property string _foundDesktop: ""
+    property var _foundDesktop: null
 
     property var _currentDesktopEntry: ({
             "_uwsmManaged": false
@@ -48,13 +48,36 @@ Singleton {
         return true;
     }
 
+    function getExitCommand() {
+        if (Settings.exitCommand && Settings.exitCommand.length) {
+            return Settings.exitCommand;
+        }
+
+        // Prefer uwsm when available
+        if (sessionManager._isUsingUwsm) {
+            return ["uwsm", "stop"];
+        }
+
+        const currentDesktop = (Quickshell.env("XDG_CURRENT_DESKTOP") || "").toLowerCase();
+
+        if (currentDesktop.includes("hyprland")) {
+            return ["hyprctl", "dispatch", "exit"];
+        }
+
+        if (currentDesktop.includes("niri")) {
+            return ["niri", "msg", "action", "quit"];
+        }
+
+        return [];
+    }
+
     function getLaunchCommand() {
         const desktop = sessionManager.activeDesktop;
 
         if (!desktop || !desktop.exec)
             return [];
 
-        return desktop.exec.trim().split(/\s+/);
+        return desktop.exec.trim().split(" ");
     }
 
     Process {
@@ -127,8 +150,9 @@ Singleton {
                 return matchesUwsm && matchesActive;
             });
 
-            if (!targetDesktop)
+            if (!targetDesktop) {
                 targetDesktop = sessionManager.desktops.find(desktop => desktop.name.toLowerCase().includes(currentDesktop));
+            }
 
             sessionManager._foundDesktop = targetDesktop || (sessionManager.desktops.length > 0 ? sessionManager.desktops[0] : null);
         }
