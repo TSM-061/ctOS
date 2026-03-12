@@ -2,6 +2,6 @@ import QtQuick
 import Quickshell.Io
 
 JsonObject {
-    property string defaultUser: ""
-    property string defaultDesktop: ""
+    property string defaultUsername: ""
+    property string defaultDesktopName: ""
 }

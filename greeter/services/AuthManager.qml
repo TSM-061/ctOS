@@ -29,9 +29,9 @@ Singleton {
         Finish
     }
 
-    property string user: SessionManager.activeUser
-
     property int state: AuthManager.State.Inactive
+
+    property string _username: SessionManager.activeUser.username
 
     property var _handler
 
@@ -67,7 +67,7 @@ Singleton {
         authManager.state = AuthManager.State.Ready;
 
         if (authManager._firstSession) {
-            TerminalManager.displayMessage(`${authManager._blumePrefix} Opened session for user(${authManager.user})`);
+            TerminalManager.displayMessage(`${authManager._blumePrefix} Opened session for user(${authManager._username})`);
             authManager._firstSession = false;
         } else {
             TerminalManager.displayMessage(`${authManager._blumePrefix} Session recreated with existing parameters.`);
@@ -80,8 +80,9 @@ Singleton {
         }
 
         authManager.state = AuthManager.State.Success;
+
         TerminalManager.displayMessage(`${authManager._blumePrefix} IDENTITY_VERIFIED // WELCOME BACK`);
-        TerminalManager.displayMessage(`${authManager._blumePrefix} Session closed for user(${authManager.user.toUpperCase()})`);
+        TerminalManager.displayMessage(`${authManager._blumePrefix} Session closed for user(${authManager._username.toUpperCase()})`);
     }
 
     function onFailed() {

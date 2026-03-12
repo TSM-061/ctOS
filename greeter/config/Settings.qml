@@ -37,8 +37,8 @@ Singleton {
 
     readonly property GeneralDto general: globalAdapter.general
 
-    property string defaultUser: stateAdapter.session.defaultUser
-    property string defaultDesktop: stateAdapter.session.defaultDesktop
+    property string defaultUsername: stateAdapter.session.defaultUsername
+    property string defaultDesktopName: stateAdapter.session.defaultDesktopName
 
     readonly property string modeKey: Object.keys(root.modes).find(key => root.modes[key] === root.mode)
 

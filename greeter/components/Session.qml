@@ -46,7 +46,7 @@ RowLayout {
                         Typewriter {
                             id: typewriter
                             color: Theme.textPrimary
-                            initialText: SessionManager.activeUser.toUpperCase()
+                            initialText: ""
                             font.family: Theme.fontFamily
                             font.pixelSize: 14
                         }
@@ -98,7 +98,7 @@ RowLayout {
     Connections {
         target: SessionManager
         function onActiveUserChanged() {
-            typewriter.overwrite(SessionManager.activeUser.toUpperCase());
+            typewriter.overwrite(SessionManager.activeUser.username.toUpperCase());
         }
     }
 }
