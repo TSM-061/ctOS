@@ -9,59 +9,63 @@ import qs.greeter.config
 Singleton {
     id: terminalManager
 
-    property var _queue: []
-
     property var logModel: ListModel {}
+
+    property var _queue: []
 
     signal paused(string pauseMarker)
 
     property bool isPaused: false
 
-    property string pauseMarker
+    property int currentState: TerminalManager.State.Booting
+    property var _serviceRegistry: []
 
-    Timer {
-        id: worker
-        repeat: true
-        interval: 1
-        onTriggered: () => {
-            if (terminalManager._queue.length === 0) {
-                terminalManager.logModel.append(terminalManager._createItem({
-                    type: "prompt",
-                    pauseMarker: "PROMPT"
-                }));
-                worker.stop();
-                worker.interval = 1;
-                return;
-            }
+    readonly property bool isLocked: {
+        for (var i = 0; i < _serviceRegistry.length; i++) {
+            if (_serviceRegistry[i].locked)
+                return true;
+        }
+        return false;
+    }
 
-            // Flush the entire leading instant run atomically — no per-item delay
-            if (terminalManager._queue[0].instant) {
-                while (terminalManager._queue[0]?.instant) {
-                    terminalManager._addToModel(terminalManager._queue.shift());
-                }
-                return;
-            }
+    enum State {
+        Booting,
+        Interactive,
+        Busy,
+        TearDown
+    }
 
-            const item = terminalManager._queue.shift();
-            terminalManager._addToModel(item);
+    function registerService(serviceId) {
+        _serviceRegistry.push({
+            id: serviceId,
+            locked: true
+        });
 
-            // Prompt items hand off control to the Terminal delegate
-            if (item.type === "prompt") {
-                worker.stop();
-                worker.interval = 1;
-                return;
-            }
+        _serviceRegistryChanged();
+    }
 
-            if (item.pauseWithMarker) {
-                worker.stop();
-                terminalManager.paused(item.pauseWithMarker);
-                return;
-            }
+    function unlock(serviceId) {
+        const service = _serviceRegistry.find(s => s.id === serviceId);
 
-            const minDelay = 1;
-            const maxDelay = 300;
-            const delay = Math.random() * maxDelay;
-            worker.interval = Utils.clamp(delay, minDelay, maxDelay);
+        if (!service) {
+            throw new Error(`Service not registered: '${serviceId}'`);
+        }
+
+        service.locked = false;
+        _serviceRegistryChanged();
+
+        checkTransition();
+    }
+
+    function _unlockAll() {
+        _serviceRegistry.forEach(s => s.locked = false);
+        _serviceRegistryChanged();
+        checkTransition();
+    }
+
+    function checkTransition() {
+        if (!isLocked && currentState === TerminalManager.State.Booting) {
+            terminalManager.currentState = (TerminalManager.State.Interactive);
         }
     }
 
@@ -84,19 +88,14 @@ Singleton {
             type: "output",
             instant: false,
             message: "",
-            animateTo: "",
-            pauseWithMarker: "",
-            animateTo: ""
+            pauseWithMarker: ""
         };
 
         const extra = overrides || {};
         return Object.assign(base, extra);
     }
 
-    function displayMessage(message: string, options = {
-        pauseWithMarker: "",
-        instant: false
-    }) {
+    function displayMessage(message: string, options = {}) {
         const {
             pauseWithMarker = "",
             instant = false
@@ -138,28 +137,65 @@ Singleton {
             worker.start();
     }
 
-    function unPause() {
+    function resume() {
         isPaused = false;
         worker.start();
     }
 
-    // Enqueue a prompt that will typewrite `text` into the input, then call `callback`.
-    function displayPrompt(text: string) {
-        terminalManager._queue.push(terminalManager._createItem({
-            type: "prompt",
-            animateTo: text
-        }));
-        if (!worker.running)
-            worker.start();
-    }
-
     Component.onCompleted: {
+        terminalManager.registerService(terminalManager.toString());
+
         displayMessage("REGION_LINK_ESTABLISHED : AU-SOUTH-EAST-2");
         displayMessage("LOG_STREAM_CONNECTED // 1B7C5296-469D-4595-AD5D-4E31349CF13F");
-
         displayMessage(`WL_OUTPUT_FOUND: ${Settings.monitor} <-> ADDR_PTR: 0x${Faker.randomHexString()}`);
         displayMessage("---GREETER_UI_INITIALIZING---", {
             pauseWithMarker: "UI_INIT"
         });
+    }
+
+    Timer {
+        id: worker
+        repeat: true
+        interval: 1
+        onTriggered: () => {
+            if (terminalManager._queue.length === 0) {
+                // terminalManager.logModel.append(terminalManager._createItem({
+                //     type: "prompt",
+                //     pauseMarker: "PROMPT"
+                // }));
+                worker.stop();
+                // worker.interval = 1;
+                return;
+            }
+
+            // Flush the entire leading instant run atomically — no per-item delay
+            // if (terminalManager._queue[0].instant) {
+            //     while (terminalManager._queue[0]?.instant) {
+            //         terminalManager._addToModel(terminalManager._queue.shift());
+            //     }
+            //     return;
+            // }
+
+            const item = terminalManager._queue.shift();
+            terminalManager._addToModel(item);
+
+            if (item.pauseWithMarker) {
+                worker.stop();
+                terminalManager.paused(item.pauseWithMarker);
+                return;
+            }
+
+            // Prompt items hand off control to the Terminal delegate
+            // if (item.type === "prompt") {
+            //     worker.stop();
+            //     worker.interval = 1;
+            //     return;
+            // }
+
+            const minDelay = 200;
+            const maxDelay = 400;
+            const delay = Math.random() * maxDelay;
+            worker.interval = Utils.clamp(delay, minDelay, maxDelay);
+        }
     }
 }

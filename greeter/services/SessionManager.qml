@@ -11,13 +11,13 @@ Singleton {
 
     property bool _isUsingUwsm: false
 
-    property var users: []
-    property var desktops: []
+    property list<User> users: []
+    property list<Desktop> desktops: []
 
-    property var activeUser: sessionManager.findUser(Settings.defaultUsername) || _firstUser
+    property User activeUser: sessionManager.findUser(Settings.defaultUsername) || _firstUser
     property var _firstUser: null
 
-    property var activeDesktop: sessionManager.findDesktop(Settings.defaultDesktopName) || _firstDesktop
+    property Desktop activeDesktop: sessionManager.findDesktop(Settings.defaultDesktopName) || _firstDesktop
     property var _firstDesktop: null
 
     Component {
@@ -28,14 +28,6 @@ Singleton {
     Component {
         id: desktopFactory
         Desktop {}
-    }
-
-    function createUser(data) {
-        return userFactory.createObject(sessionManager, data);
-    }
-
-    function createDesktop(data) {
-        return desktopFactory.createObject(sessionManager, data);
     }
 
     function _findIn(list, value, key) {
@@ -152,7 +144,7 @@ Singleton {
                 const isNotNobody = (user !== "nobody");
 
                 if (isStandard && isRealUser && isNotNobody) {
-                    const userObj = createUser({
+                    const userObj = userFactory.createObject(sessionManager, {
                         "username": user,
                         "homeDir": home,
                         "shell": shell,
@@ -239,7 +231,7 @@ Singleton {
             const entry = desktopsProcess._currentEntry;
 
             if (entry.name && entry.exec) {
-                const desktopObj = createDesktop(entry);
+                const desktopObj = desktopFactory.createObject(sessionManager, entry);
                 desktops.push(desktopObj);
                 desktopsChanged();
             }

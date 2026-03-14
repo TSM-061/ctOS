@@ -31,7 +31,7 @@ Singleton {
 
     property int state: AuthManager.State.Inactive
 
-    property string _username: SessionManager.activeUser.username
+    property string _username: SessionManager.activeUser?.username || ""
 
     property var _handler
 
@@ -43,7 +43,7 @@ Singleton {
     Component.onCompleted: {
         if (Settings.isTest) {
             _handler = FakeHandler;
-            TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} using Protocol::TEST`);
+            TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} using Protocol::CTOS_TEST`);
         } else if (Settings.isGreetd || Settings.isKiosk) {
             _handler = GreetdHandler;
             TerminalManager.displayMessage(`◈ ${authManager._blumePrefix} using Protocol::CTOS_GREETD`);
@@ -59,8 +59,6 @@ Singleton {
         _handler.failed.connect(onFailed);
 
         _handler.start();
-
-        TerminalManager.displayMessage(`${_sentinelPrefix} CIPHER_NEGOTIATED <-> bnet://0x8D2A4F1B:1443`);
     }
 
     function onReady() {

@@ -70,7 +70,7 @@ Singleton {
     }
 
     readonly property int animationMode: {
-        const value = (general.modes[modeKey].animations || general.animations || "all").toLowerCase();
+        const value = (general.modes[modeKey].animations || general.animations || "").toLowerCase();
 
         switch (value) {
         case "none":
