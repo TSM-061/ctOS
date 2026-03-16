@@ -84,7 +84,7 @@ Singleton {
             return _err("username or index required");
 
         if (SessionManager.setUser(value))
-            _out(`user -> ${SessionManager.activeUser}`);
+            _out(`user -> ${SessionManager.activeUser.username}`);
         else
             _err(`user '${value}' not found`);
     }
@@ -102,15 +102,17 @@ Singleton {
     function _handleList(args) {
         const noun = args[0]?.toLowerCase();
         if (noun === "users") {
-            const messages = SessionManager.users.map((u, i) => `${i + 1}. ${u.username}`);
-            TerminalManager.displayMessages(messages, {
-                instant: true
-            });
+            const messages = SessionManager.users.map((u, i) => ({
+                        message: `${i + 1}. ${u.username}`,
+                        instant: true
+                    }));
+            TerminalManager.displayMessages(messages);
         } else if (noun === "desktops" || noun === "desk") {
-            const messages = SessionManager.desktops.map((s, i) => `${i + 1}. ${s.name}`);
-            TerminalManager.displayMessages(messages, {
-                instant: true
-            });
+            const messages = SessionManager.desktops.map((s, i) => ({
+                        message: `${i + 1}. ${s.name}`,
+                        instant: true
+                    }));
+            TerminalManager.displayMessages(messages);
         } else {
             _err("usage: list <users|desktops>");
         }
@@ -122,9 +124,12 @@ Singleton {
 
     function _out(msg: string, prefix = "") {
         const line = prefix ? `${prefix} ${msg}` : msg;
-        TerminalManager.displayMessage(line, {
-            instant: true
-        });
+        TerminalManager.displayMessages([
+            {
+                message: line,
+                instant: true
+            }
+        ]);
     }
 
     function _err(msg: string, prefix = "ERR") {

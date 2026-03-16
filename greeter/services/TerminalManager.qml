@@ -5,28 +5,27 @@ import Quickshell
 
 import qs.common
 import qs.greeter.config
+import qs.greeter.data
 
 Singleton {
     id: terminalManager
 
+    property int state: TerminalManager.State.Booting
+
+    // actual model for output messages
     property var logModel: ListModel {}
 
-    property var _queue: []
+    // buffer for storing messages generated before terminal is ready
+    property list<var> _queue: []
 
     signal paused(string pauseMarker)
 
+    // pausing prevents new output from being added
     property bool isPaused: false
 
-    property int currentState: TerminalManager.State.Booting
-    property var _serviceRegistry: []
-
-    readonly property bool isLocked: {
-        for (var i = 0; i < _serviceRegistry.length; i++) {
-            if (_serviceRegistry[i].locked)
-                return true;
-        }
-        return false;
-    }
+    // locking means an input prompt won't be added
+    property var _serviceLocks: []
+    readonly property bool isLocked: _serviceLocks.some(service => service.locked)
 
     enum State {
         Booting,
@@ -35,106 +34,107 @@ Singleton {
         TearDown
     }
 
-    function registerService(serviceId) {
-        _serviceRegistry.push({
-            id: serviceId,
+    enum MessageType {
+        Output,
+        Prompt
+    }
+
+    function registerService(service) {
+        _serviceLocks.push({
+            id: service.toString(),
             locked: true
         });
 
-        _serviceRegistryChanged();
+        _serviceLocksChanged();
     }
 
-    function unlock(serviceId) {
-        const service = _serviceRegistry.find(s => s.id === serviceId);
+    function unlock(service) {
+        const foundService = _serviceLocks.find(s => s.id === service.toString());
 
-        if (!service) {
-            throw new Error(`Service not registered: '${serviceId}'`);
+        if (!foundService) {
+            throw new Error(`Service not registered: '${service}'`);
         }
 
-        service.locked = false;
-        _serviceRegistryChanged();
+        foundService.locked = false;
+        _serviceLocksChanged();
 
-        checkTransition();
-    }
-
-    function _unlockAll() {
-        _serviceRegistry.forEach(s => s.locked = false);
-        _serviceRegistryChanged();
-        checkTransition();
-    }
-
-    function checkTransition() {
-        if (!isLocked && currentState === TerminalManager.State.Booting) {
-            terminalManager.currentState = (TerminalManager.State.Interactive);
+        if (!isLocked && state === TerminalManager.State.Booting) {
+            terminalManager.state = TerminalManager.State.Interactive;
         }
     }
 
-    function _addToModel(item) {
-        logModel.append(item);
-
-        if (logModel.count > 50) {
-            logModel.remove(0);
-        }
-    }
-
+    /*
+        Output is ready to receive messages added to model.
+    */
     function notifyReady() {
         if (!worker.running) {
             worker.start();
         }
     }
 
-    function _createItem(overrides) {
-        const base = {
-            type: "output",
-            instant: false,
-            message: "",
-            pauseWithMarker: ""
+    function createMessage(properties) {
+        const instant = properties.instant || false;
+
+        if (instant && (properties.pauseWithMarker || properties.unlock)) {
+            throw new Error("TerminalManager.createMessage: 'instant' is incompatible with other message flags");
+        }
+
+        const message = {
+            /* Actual message content. */
+            message: properties.message || "",
+            /* Message Type. */
+            type: properties.type || TerminalManager.MessageType.Output,
+            /* Should message be output immediately. */
+            instant: instant,
+            /* Allows terminal to sync with external events. */
+            pauseWithMarker: properties.pauseWithMarker || ""
         };
 
-        const extra = overrides || {};
-        return Object.assign(base, extra);
+        if (properties.unlock) {
+            // role is not created if member is null
+            message.unlock = properties.unlock;
+        }
+
+        return message;
     }
 
-    function displayMessage(message: string, options = {}) {
-        const {
-            pauseWithMarker = "",
-            instant = false
-        } = options;
-
-        const item = terminalManager._createItem({
-            type: "output",
-            instant,
-            message,
-            pauseWithMarker
+    function createPromptMessage() {
+        return terminalManager.createMessage({
+            type: TerminalManager.MessageType.Prompt,
+            instant: true
         });
+    }
 
-        terminalManager._queue.push(item);
+    function createMessagesOptions(properties) {
+        return {
+            /* Is output from a user command. */
+            isCommandOutput: properties?.isCommandOutput || false
+        };
+    }
+
+    function displayMessages(messages: var, options) {
+        if (!Array.isArray(messages)) {
+            throw new Error("TerminalManager.displayMessages requires an array of message objects");
+        }
+
+        options = options || {};
+
+        const {
+            isCommandOutput
+        } = createMessagesOptions(options);
+
+        const items = messages.map(msg => createMessage(msg));
+
+        if (isCommandOutput) {
+            items.push(terminalManager.createPromptMessage());
+        }
+
+        // circumvent the queue when the terminal is interactive
+        terminalManager._queue.push(...items);
 
         if (!worker.running) {
             worker.start();
         }
-    }
-
-    function displayMessages(messages: var, options = {
-        pauseWithMarker: "",
-        instant: false
-    }) {
-        const {
-            pauseWithMarker = "",
-            instant = false
-        } = options;
-
-        const items = messages.map(msg => terminalManager._createItem({
-                type: "output",
-                instant,
-                message: msg,
-                pauseWithMarker
-            }));
-
-        terminalManager._queue.push(...items);
-
-        if (!worker.running)
-            worker.start();
     }
 
     function resume() {
@@ -143,54 +143,79 @@ Singleton {
     }
 
     Component.onCompleted: {
-        terminalManager.registerService(terminalManager.toString());
+        terminalManager.registerService(terminalManager);
 
-        displayMessage("REGION_LINK_ESTABLISHED : AU-SOUTH-EAST-2");
-        displayMessage("LOG_STREAM_CONNECTED // 1B7C5296-469D-4595-AD5D-4E31349CF13F");
-        displayMessage(`WL_OUTPUT_FOUND: ${Settings.monitor} <-> ADDR_PTR: 0x${Faker.randomHexString()}`);
-        displayMessage("---GREETER_UI_INITIALIZING---", {
-            pauseWithMarker: "UI_INIT"
-        });
+        terminalManager.displayMessages([
+            {
+                message: "REGION_LINK_ESTABLISHED : AU-SOUTH-EAST-2"
+            },
+            {
+                message: "LOG_STREAM_CONNECTED // 1B7C5296-469D-4595-AD5D-4E31349CF13F"
+            },
+            {
+                message: `WL_OUTPUT_FOUND: ${Settings.monitor} <-> ADDR_PTR: 0x${Faker.randomHexString()}`
+            },
+            {
+                message: "---GREETER_UI_INITIALIZING---",
+                pauseWithMarker: "UI_INIT",
+                unlock: terminalManager
+            }
+        ]);
+    }
+
+    function processQueue() {
     }
 
     Timer {
         id: worker
         repeat: true
         interval: 1
+
         onTriggered: () => {
             if (terminalManager._queue.length === 0) {
-                // terminalManager.logModel.append(terminalManager._createItem({
-                //     type: "prompt",
-                //     pauseMarker: "PROMPT"
-                // }));
                 worker.stop();
-                // worker.interval = 1;
+
+                if (!terminalManager.isLocked) {
+                    // prompt goes straight to output
+                    terminalManager.logModel.append(terminalManager.createPromptMessage());
+                }
+
                 return;
             }
 
-            // Flush the entire leading instant run atomically — no per-item delay
-            // if (terminalManager._queue[0].instant) {
-            //     while (terminalManager._queue[0]?.instant) {
-            //         terminalManager._addToModel(terminalManager._queue.shift());
-            //     }
-            //     return;
-            // }
+            if (terminalManager._queue[0].instant) {
+                const instantItems = [];
+
+                while (terminalManager._queue[0]?.instant) {
+                    instantItems.push(terminalManager._queue.shift());
+                }
+
+                terminalManager.logModel.append(instantItems);
+
+                if (terminalManager.logModel.count > 50) {
+                    terminalManager.logModel.remove(0, terminalManager.logModel.count - 50);
+                }
+
+                worker.interval = 1;
+                return;
+            }
 
             const item = terminalManager._queue.shift();
-            terminalManager._addToModel(item);
+            terminalManager.logModel.append(item);
+
+            if (terminalManager.logModel.count > 50) {
+                terminalManager.logModel.remove(0);
+            }
+
+            if (item.unlock) {
+                terminalManager.unlock(item.unlock);
+            }
 
             if (item.pauseWithMarker) {
                 worker.stop();
                 terminalManager.paused(item.pauseWithMarker);
                 return;
             }
-
-            // Prompt items hand off control to the Terminal delegate
-            // if (item.type === "prompt") {
-            //     worker.stop();
-            //     worker.interval = 1;
-            //     return;
-            // }
 
             const minDelay = 200;
             const maxDelay = 400;

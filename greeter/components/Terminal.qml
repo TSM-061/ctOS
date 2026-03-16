@@ -8,6 +8,7 @@ import qs.common
 import qs.common.services
 import qs.common.components
 import qs.greeter.config
+import qs.greeter.data
 
 ColumnLayout {
     id: terminal
@@ -59,6 +60,7 @@ ColumnLayout {
         Behavior on contentY {
             id: scrollBehavior
             NumberAnimation {
+                id: scrollAnimation
                 duration: 50
                 easing.type: Easing.OutCubic
             }
@@ -84,14 +86,22 @@ ColumnLayout {
             role: "type"
 
             DelegateChoice {
-                roleValue: "output"
+                roleValue: TerminalManager.MessageType.Output
 
                 delegate: Item {
+                    id: outputDelegate
                     width: logView.width
                     height: terminal.lineHeight
 
                     required property string message
                     required property string type
+                    required property bool instant
+
+                    Binding {
+                        target: scrollAnimation
+                        property: "duration"
+                        value: outputDelegate.instant ? 0 : 50
+                    }
 
                     Text {
                         id: entry
@@ -123,33 +133,41 @@ ColumnLayout {
             }
 
             DelegateChoice {
-                roleValue: "prompt"
+                roleValue: TerminalManager.MessageType.Prompt
 
                 delegate: Row {
-                    id: promptRow
+                    id: inputDelegate
                     width: logView.width
                     height: terminal.lineHeight
 
                     spacing: 0
 
-                    required property string animateTo
+                    required property bool instant
 
-                    property int charIndex: 0
-
-                    NumberAnimation {
-                        id: typewriterAnim
-                        target: promptRow
-                        property: "charIndex"
-                        from: 0
-                        to: promptRow.animateTo.length
-                        duration: promptRow.animateTo.length * 60
-                        easing.type: Easing.Linear
+                    Binding {
+                        target: scrollAnimation
+                        property: "duration"
+                        value: inputDelegate.instant ? 0 : 50
                     }
 
-                    Component.onCompleted: {
-                        if (animateTo !== "")
-                            typewriterAnim.start();
-                    }
+                    // required property string animateTo
+
+                    // property int charIndex: 0
+
+                    // NumberAnimation {
+                    //     id: typewriterAnim
+                    //     target: promptRow
+                    //     property: "charIndex"
+                    //     from: 0
+                    //     to: promptRow.animateTo.length
+                    //     duration: promptRow.animateTo.length * 60
+                    //     easing.type: Easing.Linear
+                    // }
+
+                    // Component.onCompleted: {
+                    //     if (animateTo !== "")
+                    //         typewriterAnim.start();
+                    // }
 
                     Text {
                         id: terminalPrompt
@@ -163,7 +181,6 @@ ColumnLayout {
 
                     TextInput {
                         id: terminalInput
-                        objectName: "terminalInput"
 
                         height: parent.height
                         width: parent.width - terminalPrompt.width
@@ -171,13 +188,13 @@ ColumnLayout {
                         color: Theme.textPrimaryDim
                         font: terminal.font
 
-                        enabled: promptRow.animateTo === ""
+                        // enabled: promptRow.animateTo === ""
 
                         Binding {
                             target: terminalInput
                             property: "text"
-                            value: promptRow.animateTo.substring(0, promptRow.charIndex)
-                            when: promptRow.animateTo !== ""
+                            // value: promptRow.animateTo.substring(0, promptRow.charIndex)
+                            // when: promptRow.animateTo !== ""
                         }
 
                         onAccepted: {
@@ -208,6 +225,7 @@ ColumnLayout {
                                 tabIndex: 1
                             });
 
+                            // make sure to focus the next prompt that is generated
                             if (!logView.isFirstPrompt) {
                                 FocusManager.requestFocus(terminalInput);
                             }
