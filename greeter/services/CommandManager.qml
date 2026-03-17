@@ -46,7 +46,6 @@ Singleton {
         }
     }
 
-    // Returns the next older history entry (Up arrow)
     function previousHistory(): string {
         if (_history.length === 0)
             return "";
@@ -54,7 +53,6 @@ Singleton {
         return _history[_historyIndex];
     }
 
-    // Returns the next newer history entry, or "" when past the newest (Down arrow)
     function nextHistory(): string {
         if (_historyIndex <= 0) {
             _historyIndex = -1;
