@@ -10,6 +10,8 @@ import qs.greeter.data
 Singleton {
     id: terminalManager
 
+    signal paused(string pauseMarker)
+
     property int state: TerminalManager.State.Booting
 
     // actual model for output messages
@@ -18,7 +20,8 @@ Singleton {
     // buffer for storing messages generated before terminal is ready
     property list<var> _queue: []
 
-    signal paused(string pauseMarker)
+    // slot for an item that should be delivered on the next timer tick
+    property var _pendingMsg: null
 
     // pausing prevents new output from being added
     property bool isPaused: false
@@ -26,6 +29,8 @@ Singleton {
     // locking means an input prompt won't be added
     property var _serviceLocks: []
     readonly property bool isLocked: _serviceLocks.some(service => service.locked)
+
+    property bool isFirstPrompt: true
 
     enum State {
         Booting,
@@ -67,9 +72,8 @@ Singleton {
         Output is ready to receive messages added to model.
     */
     function notifyReady() {
-        if (!worker.running) {
-            worker.start();
-        }
+        // kick off processing when terminal becomes ready
+        terminalManager.processQueue();
     }
 
     function createMessage(properties) {
@@ -98,21 +102,20 @@ Singleton {
         return message;
     }
 
-    function createPromptMessage() {
-        return terminalManager.createMessage({
-            type: TerminalManager.MessageType.Prompt,
-            instant: true
-        });
-    }
-
-    function createMessagesOptions(properties) {
+    function createMessageOptions(properties) {
         return {
             /* Is output from a user command. */
             isCommandOutput: properties?.isCommandOutput || false
         };
     }
 
-    function displayMessages(messages: var, options) {
+    function cleanLogModel() {
+        if (logModel.count > 50) {
+            logModel.remove(0, logModel.count - 50);
+        }
+    }
+
+    function displayMessages(messages: var, options: var) {
         if (!Array.isArray(messages)) {
             throw new Error("TerminalManager.displayMessages requires an array of message objects");
         }
@@ -121,31 +124,31 @@ Singleton {
 
         const {
             isCommandOutput
-        } = createMessagesOptions(options);
+        } = createMessageOptions(options);
 
         const items = messages.map(msg => createMessage(msg));
 
         if (isCommandOutput) {
-            items.push(terminalManager.createPromptMessage());
+            items.push(createMessage({
+                type: TerminalManager.MessageType.Prompt,
+                instant: true
+            }));
         }
 
-        // circumvent the queue when the terminal is interactive
         terminalManager._queue.push(...items);
 
-        if (!worker.running) {
-            worker.start();
-        }
+        processQueue();
     }
 
     function resume() {
         isPaused = false;
-        worker.start();
+        processQueue();
     }
 
     Component.onCompleted: {
-        terminalManager.registerService(terminalManager);
+        registerService(terminalManager);
 
-        terminalManager.displayMessages([
+        displayMessages([
             {
                 message: "REGION_LINK_ESTABLISHED : AU-SOUTH-EAST-2"
             },
@@ -164,63 +167,67 @@ Singleton {
     }
 
     function processQueue() {
+        if (worker.running) {
+            return;
+        }
+
+        if (_pendingMsg) {
+            const msg = _pendingMsg;
+            _pendingMsg = null;
+
+            logModel.append(msg);
+            cleanLogModel();
+
+            if (msg.unlock) {
+                unlock(msg.unlock);
+            }
+
+            if (msg.pauseWithMarker) {
+                worker.stop();
+                paused(msg.pauseWithMarker);
+                return;
+            }
+        }
+
+        if (_queue.length === 0) {
+            worker.stop();
+
+            if (isFirstPrompt && !terminalManager.isLocked) {
+                logModel.append(createMessage({
+                    type: TerminalManager.MessageType.Prompt
+                }));
+                isFirstPrompt = false;
+            }
+
+            return;
+        }
+
+        if (_queue[0].instant) {
+            const instantMsgs = [];
+
+            while (terminalManager._queue[0]?.instant) {
+                instantMsgs.push(terminalManager._queue.shift());
+            }
+
+            logModel.append(instantMsgs);
+            cleanLogModel();
+            return;
+        }
+
+        const minDelay = 200;
+        const maxDelay = 400;
+        const delay = Math.random() * maxDelay;
+
+        _pendingMsg = _queue.shift();
+
+        worker.interval = Utils.clamp(delay, minDelay, maxDelay);
+        worker.start();
     }
 
     Timer {
         id: worker
-        repeat: true
-        interval: 1
+        interval: 100
 
-        onTriggered: () => {
-            if (terminalManager._queue.length === 0) {
-                worker.stop();
-
-                if (!terminalManager.isLocked) {
-                    // prompt goes straight to output
-                    terminalManager.logModel.append(terminalManager.createPromptMessage());
-                }
-
-                return;
-            }
-
-            if (terminalManager._queue[0].instant) {
-                const instantItems = [];
-
-                while (terminalManager._queue[0]?.instant) {
-                    instantItems.push(terminalManager._queue.shift());
-                }
-
-                terminalManager.logModel.append(instantItems);
-
-                if (terminalManager.logModel.count > 50) {
-                    terminalManager.logModel.remove(0, terminalManager.logModel.count - 50);
-                }
-
-                worker.interval = 1;
-                return;
-            }
-
-            const item = terminalManager._queue.shift();
-            terminalManager.logModel.append(item);
-
-            if (terminalManager.logModel.count > 50) {
-                terminalManager.logModel.remove(0);
-            }
-
-            if (item.unlock) {
-                terminalManager.unlock(item.unlock);
-            }
-
-            if (item.pauseWithMarker) {
-                worker.stop();
-                terminalManager.paused(item.pauseWithMarker);
-                return;
-            }
-
-            const minDelay = 200;
-            const maxDelay = 400;
-            const delay = Math.random() * maxDelay;
-            worker.interval = Utils.clamp(delay, minDelay, maxDelay);
-        }
+        onTriggered: terminalManager.processQueue()
     }
 }

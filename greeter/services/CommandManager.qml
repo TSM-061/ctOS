@@ -71,12 +71,17 @@ Singleton {
         if (!noun || !value)
             return _err("usage: change <user|desktop> <new_value>");
 
-        if (noun === "user")
+        switch (noun) {
+        case "user":
             _handleUserChange(value);
-        else if (noun === "desktop" || noun === "desk")
+            break;
+        case "desktop":
+        case "desk":
             _handleDesktopChange(value);
-        else
+            break;
+        default:
             _err(`unknown target '${noun}'`);
+        }
     }
 
     function _handleUserChange(value: string): void {
@@ -101,19 +106,31 @@ Singleton {
 
     function _handleList(args) {
         const noun = args[0]?.toLowerCase();
-        if (noun === "users") {
-            const messages = SessionManager.users.map((u, i) => ({
-                        message: `${i + 1}. ${u.username}`,
-                        instant: true
-                    }));
-            TerminalManager.displayMessages(messages);
-        } else if (noun === "desktops" || noun === "desk") {
-            const messages = SessionManager.desktops.map((s, i) => ({
-                        message: `${i + 1}. ${s.name}`,
-                        instant: true
-                    }));
-            TerminalManager.displayMessages(messages);
-        } else {
+        switch (noun) {
+        case "users":
+            {
+                const messages = SessionManager.users.map((u, i) => ({
+                            message: `${i + 1}. ${u.username}`,
+                            instant: true
+                        }));
+                TerminalManager.displayMessages(messages, {
+                    isCommandOutput: true
+                });
+                break;
+            }
+        case "desktops":
+        case "desk":
+            {
+                const messages = SessionManager.desktops.map((s, i) => ({
+                            message: `${i + 1}. ${s.name}`,
+                            instant: true
+                        }));
+                TerminalManager.displayMessages(messages, {
+                    isCommandOutput: true
+                });
+                break;
+            }
+        default:
             _err("usage: list <users|desktops>");
         }
     }
@@ -124,12 +141,15 @@ Singleton {
 
     function _out(msg: string, prefix = "") {
         const line = prefix ? `${prefix} ${msg}` : msg;
+
         TerminalManager.displayMessages([
             {
                 message: line,
                 instant: true
             }
-        ]);
+        ], {
+            isCommandOutput: true
+        });
     }
 
     function _err(msg: string, prefix = "ERR") {
