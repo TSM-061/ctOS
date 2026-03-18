@@ -28,9 +28,7 @@ Singleton {
 
     // locking means an input prompt won't be added
     property var _serviceLocks: []
-    readonly property bool isLocked: _serviceLocks.some(service => service.locked)
-
-    property bool isFirstPrompt: true
+    readonly property bool locked: _serviceLocks.some(service => service.locked)
 
     enum State {
         Booting,
@@ -63,9 +61,20 @@ Singleton {
         foundService.locked = false;
         _serviceLocksChanged();
 
-        if (!isLocked && state === TerminalManager.State.Booting) {
+        if (!locked && state === TerminalManager.State.Booting) {
             terminalManager.state = TerminalManager.State.Interactive;
         }
+    }
+
+    function lock(service) {
+        const foundService = _serviceLocks.find(s => s.id === service.toString());
+
+        if (!foundService) {
+            throw new Error(`Service not registered: '${service}'`);
+        }
+
+        foundService.locked = true;
+        _serviceLocksChanged();
     }
 
     /*
@@ -91,7 +100,9 @@ Singleton {
             /* Should message be output immediately. */
             instant: instant,
             /* Allows terminal to sync with external events. */
-            pauseWithMarker: properties.pauseWithMarker || ""
+            pauseWithMarker: properties.pauseWithMarker || "",
+            /* Simulate a command being typed into prompt. */
+            virtualPrompt: properties.virtualPrompt || ""
         };
 
         if (properties.unlock) {
@@ -115,25 +126,12 @@ Singleton {
         }
     }
 
-    function displayMessages(messages: var, options: var) {
+    function displayMessages(messages: var) {
         if (!Array.isArray(messages)) {
             throw new Error("TerminalManager.displayMessages requires an array of message objects");
         }
 
-        options = options || {};
-
-        const {
-            isCommandOutput
-        } = createMessageOptions(options);
-
         const items = messages.map(msg => createMessage(msg));
-
-        if (isCommandOutput) {
-            items.push(createMessage({
-                type: TerminalManager.MessageType.Prompt,
-                instant: true
-            }));
-        }
 
         terminalManager._queue.push(...items);
 
@@ -187,22 +185,13 @@ Singleton {
                 paused(msg.pauseWithMarker);
                 return;
             }
-        }
 
-        if (_queue.length === 0) {
-            worker.stop();
-
-            if (isFirstPrompt && !terminalManager.isLocked) {
-                logModel.append(createMessage({
-                    type: TerminalManager.MessageType.Prompt
-                }));
-                isFirstPrompt = false;
+            if (msg.virtualPrompt) {
+                console.log("yo whats up my guy''");
             }
-
-            return;
         }
 
-        if (_queue[0].instant) {
+        if (_queue[0]?.instant) {
             const instantMsgs = [];
 
             while (terminalManager._queue[0]?.instant) {
@@ -211,6 +200,17 @@ Singleton {
 
             logModel.append(instantMsgs);
             cleanLogModel();
+        }
+
+        if (_queue.length === 0) {
+            worker.stop();
+
+            if (!terminalManager.locked) {
+                logModel.append(createMessage({
+                    type: TerminalManager.MessageType.Prompt
+                }));
+            }
+
             return;
         }
 

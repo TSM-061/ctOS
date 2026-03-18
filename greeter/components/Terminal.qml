@@ -176,7 +176,6 @@ ColumnLayout {
                         color: Theme.textPrimaryDim
                         font: terminal.font
                         height: parent.height
-                        verticalAlignment: Text.AlignVCenter
                     }
 
                     TextInput {

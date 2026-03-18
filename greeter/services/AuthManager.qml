@@ -107,10 +107,9 @@ Singleton {
 
         TerminalManager.displayMessages([
             {
-                message: `${authManager._blumePrefix} IDENTITY_VERIFIED // WELCOME BACK`
-            }
-        ]);
-        TerminalManager.displayMessages([
+                message: `${authManager._blumePrefix} IDENTITY_VERIFIED // WELCOME BACK`,
+                virtualPrompt: "login"
+            },
             {
                 message: `${authManager._blumePrefix} Session closed for user(${authManager._username.toUpperCase()})`
             }
@@ -128,9 +127,13 @@ Singleton {
 
         TerminalManager.displayMessages([
             {
-                message: `${authManager._sentinelPrefix} Authentication Failed (TraceId: ${Faker.randomHexString(16)})`
-            }
-        ]);
+                message: `${authManager._sentinelPrefix} Authentication Failed (TraceId: ${Faker.randomHexString(16)})`,
+                virtualPrompt: "login"
+            },
+        ], {
+            isCommandOutput: true
+        });
+        // TODO fix race condition from session creation message and new command prompt
     }
 
     Timer {
