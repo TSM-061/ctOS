@@ -144,30 +144,38 @@ ColumnLayout {
 
                     required property bool instant
 
+                    required property string virtualCommand
+
+                    property int charIndex: 0
+
                     Binding {
                         target: scrollAnimation
                         property: "duration"
                         value: inputDelegate.instant ? 0 : 50
                     }
 
-                    // required property string animateTo
+                    onVirtualCommandChanged: {
+                        // REVIEW bindings on animations do not update correctly
+                        // on start, could be related to 'setProperty' on model
+                        typewriterAnimation.to = virtualCommand.length;
+                        typewriterAnimation.duration = virtualCommand.length * 20;
+                        typewriterAnimation.start();
+                    }
 
-                    // property int charIndex: 0
+                    Binding {
+                        target: terminalInput
+                        property: "text"
+                        value: inputDelegate.virtualCommand.substring(0, inputDelegate.charIndex)
+                        when: inputDelegate.virtualCommand !== ""
+                    }
 
-                    // NumberAnimation {
-                    //     id: typewriterAnim
-                    //     target: promptRow
-                    //     property: "charIndex"
-                    //     from: 0
-                    //     to: promptRow.animateTo.length
-                    //     duration: promptRow.animateTo.length * 60
-                    //     easing.type: Easing.Linear
-                    // }
-
-                    // Component.onCompleted: {
-                    //     if (animateTo !== "")
-                    //         typewriterAnim.start();
-                    // }
+                    NumberAnimation {
+                        id: typewriterAnimation
+                        target: inputDelegate
+                        property: "charIndex"
+                        from: 0
+                        easing.type: Easing.Linear
+                    }
 
                     Text {
                         id: terminalPrompt
@@ -187,14 +195,7 @@ ColumnLayout {
                         color: Theme.textPrimaryDim
                         font: terminal.font
 
-                        // enabled: promptRow.animateTo === ""
-
-                        Binding {
-                            target: terminalInput
-                            property: "text"
-                            // value: promptRow.animateTo.substring(0, promptRow.charIndex)
-                            // when: promptRow.animateTo !== ""
-                        }
+                        enabled: inputDelegate.virtualCommand === ""
 
                         onAccepted: {
                             CommandManager.sendCommand(terminalInput.text);
