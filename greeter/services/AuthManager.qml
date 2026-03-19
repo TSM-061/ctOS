@@ -92,7 +92,8 @@ Singleton {
         } else {
             TerminalManager.displayMessages([
                 {
-                    message: `${authManager._blumePrefix} Session recreated with existing parameters.`
+                    message: `${authManager._blumePrefix} Session recreated with existing parameters.`,
+                    unlock: authManager
                 }
             ]);
         }
@@ -128,7 +129,8 @@ Singleton {
         TerminalManager.displayMessages([
             {
                 message: `${authManager._sentinelPrefix} Authentication Failed (TraceId: ${Faker.randomHexString(16)})`,
-                virtualPrompt: "login"
+                virtualCommand: "login",
+                lock: authManager
             },
         ], {
             isCommandOutput: true

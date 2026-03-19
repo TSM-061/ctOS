@@ -30,10 +30,10 @@ Singleton {
             _handleChange(args);
             break;
         case "chusr":
-            _handleUserChange(args.join(" "));
+            _handleUserChange(args);
             break;
         case "chdesk":
-            _handleDesktopChange(args.join(" "));
+            _handleDesktopChange(args);
             break;
         case "list":
             _handleList(args);
@@ -63,47 +63,94 @@ Singleton {
     }
 
     function _handleChange(args) {
-        const noun = args[0]?.toLowerCase();
-        const value = args.slice(1).join(" ");
+        const subCommand = args[0]?.toLowerCase();
+        const restArgs = args.slice(1);
 
-        if (!noun || !value)
-            return _err("usage: change <user|desktop> <new_value>");
+        if (!subCommand)
+            return _err("usage: change <user|desktop> [options] <value>");
 
-        switch (noun) {
+        switch (subCommand) {
         case "user":
-            _handleUserChange(value);
+            _handleUserChange(restArgs);
             break;
         case "desktop":
         case "desk":
-            _handleDesktopChange(value);
+            _handleDesktopChange(restArgs);
             break;
         default:
-            _err(`unknown target '${noun}'`);
+            _err(`unknown target '${subCommand}'`);
         }
     }
 
-    function _handleUserChange(value: string): void {
-        if (!value)
-            return _err("username or index required");
+    function _consumeFlags(args: list<string>, supportedFlags: var): var {
+        const flags = {};
+        const remaining = [];
 
-        if (SessionManager.setUser(value))
-            _out(`user -> ${SessionManager.activeUser.username}`);
+        for (const arg of args) {
+            if (arg in supportedFlags) {
+                flags[arg] = true;
+            } else {
+                remaining.push(arg);
+            }
+        }
+
+        return {
+            flags,
+            remaining
+        };
+    }
+
+    function _handleUserChange(args: list<string>): void {
+        const flagInfo = _consumeFlags(args, {
+            "-d": true,
+            "--default": true
+        });
+
+        if (!flagInfo)
+            return;
+
+        if (flagInfo.remaining.length !== 1) {
+            return _err("expected exactly one argument (username or index)");
+        }
+
+        const value = flagInfo.remaining[0];
+        const saveDefault = flagInfo.flags["-d"] || flagInfo.flags["--default"];
+
+        if (SessionManager.setUser(value, saveDefault))
+            _out(`user -> ${SessionManager.activeUser.username}${saveDefault ? ' [default]' : ''}`);
         else
             _err(`user '${value}' not found`);
     }
 
-    function _handleDesktopChange(value: string): void {
-        if (!value)
-            return _err("desktop name or index required");
+    function _handleDesktopChange(args: list<string>): void {
+        const flagInfo = _consumeFlags(args, {
+            "-d": true,
+            "--default": true
+        });
 
-        if (SessionManager.setDesktop(value))
-            _out(`desktop -> ${SessionManager.activeDesktop.name}`);
+        if (!flagInfo)
+            return;
+
+        if (flagInfo.remaining.length !== 1) {
+            return _err("expected exactly one argument (desktop name or index)");
+        }
+
+        const value = flagInfo.remaining[0];
+        const saveDefault = flagInfo.flags["-d"] || flagInfo.flags["--default"];
+
+        if (SessionManager.setDesktop(value, saveDefault))
+            _out(`desktop -> ${SessionManager.activeDesktop.name}${saveDefault ? ' [default]' : ''}`);
         else
             _err(`desktop '${value}' not found`);
     }
 
-    function _handleList(args) {
+    function _handleList(args: list<string>): void {
+        if (args.length === 0) {
+            return _err("usage: list <users|desktops>");
+        }
+
         const noun = args[0]?.toLowerCase();
+
         switch (noun) {
         case "users":
             {

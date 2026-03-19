@@ -102,8 +102,12 @@ Singleton {
             /* Allows terminal to sync with external events. */
             pauseWithMarker: properties.pauseWithMarker || "",
             /* Simulate a command being typed into prompt. */
-            virtualPrompt: properties.virtualPrompt || ""
+            virtualCommand: properties.virtualCommand || ""
         };
+
+        if (properties.lock) {
+            message.lock = properties.lock;
+        }
 
         if (properties.unlock) {
             // role is not created if member is null
@@ -120,7 +124,8 @@ Singleton {
         };
     }
 
-    function cleanLogModel() {
+    function addToModel(items) {
+        logModel.append(items);
         if (logModel.count > 50) {
             logModel.remove(0, logModel.count - 50);
         }
@@ -165,7 +170,7 @@ Singleton {
     }
 
     function processQueue() {
-        if (worker.running) {
+        if (queueWorker.running) {
             return;
         }
 
@@ -173,23 +178,48 @@ Singleton {
             const msg = _pendingMsg;
             _pendingMsg = null;
 
-            logModel.append(msg);
-            cleanLogModel();
+            addToModel(msg);
+
+            if (msg.lock) {
+                lock(msg.lock);
+            }
 
             if (msg.unlock) {
                 unlock(msg.unlock);
             }
 
             if (msg.pauseWithMarker) {
-                worker.stop();
+                queueWorker.stop();
                 paused(msg.pauseWithMarker);
                 return;
             }
 
-            if (msg.virtualPrompt) {
-                console.log("yo whats up my guy''");
+            if (msg.virtualCommand) {
+                let lastPromptIndex = -1;
+
+                for (let i = logModel.count - 1; i >= 0; i--) {
+                    const msg = logModel.get(i);
+
+                    if (msg.type === TerminalManager.MessageType.Prompt) {
+                        lastPromptIndex = i;
+                        break;
+                    }
+                }
+
+                if (lastPromptIndex === -1) {
+                    throw new Error("Prompt not found");
+                }
+
+                logModel.setProperty(lastPromptIndex, "virtualCommand", msg.virtualCommand);
+            }
+
+            if (msg.type === TerminalManager.MessageType.Prompt) {
+                queueWorker.stop();
+                return;
             }
         }
+
+        let instantBatchProcessed = false;
 
         if (_queue[0]?.instant) {
             const instantMsgs = [];
@@ -198,17 +228,26 @@ Singleton {
                 instantMsgs.push(terminalManager._queue.shift());
             }
 
-            logModel.append(instantMsgs);
-            cleanLogModel();
+            addToModel(instantMsgs);
+
+            instantBatchProcessed = true;
         }
 
         if (_queue.length === 0) {
-            worker.stop();
+            queueWorker.stop();
 
             if (!terminalManager.locked) {
-                logModel.append(createMessage({
-                    type: TerminalManager.MessageType.Prompt
-                }));
+                const prompt = createMessage({
+                    type: TerminalManager.MessageType.Prompt,
+                    instant: instantBatchProcessed
+                });
+
+                if (instantBatchProcessed) {
+                    addToModel(prompt);
+                } else {
+                    _queue.push(prompt);
+                    queueWorker.start();
+                }
             }
 
             return;
@@ -220,12 +259,12 @@ Singleton {
 
         _pendingMsg = _queue.shift();
 
-        worker.interval = Utils.clamp(delay, minDelay, maxDelay);
-        worker.start();
+        queueWorker.interval = Utils.clamp(delay, minDelay, maxDelay);
+        queueWorker.start();
     }
 
     Timer {
-        id: worker
+        id: queueWorker
         interval: 100
 
         onTriggered: terminalManager.processQueue()
