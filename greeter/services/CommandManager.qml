@@ -35,8 +35,12 @@ Singleton {
         case "chdesk":
             _handleDesktopChange(args);
             break;
-        case "list":
-            _handleList(args);
+        case "users":
+            _handleListUsers();
+            break;
+        case "desktops":
+        case "desk":
+            _handleListDesktops();
             break;
         case "help":
             _showHelp();
@@ -144,44 +148,28 @@ Singleton {
             _err(`desktop '${value}' not found`);
     }
 
-    function _handleList(args: list<string>): void {
-        if (args.length === 0) {
-            return _err("usage: list <users|desktops>");
-        }
+    function _handleListUsers(): void {
+        const messages = SessionManager.users.map((u, i) => ({
+                    message: `${i + 1}. ${u.username.toUpperCase()} (${u.uid})`,
+                    instant: true
+                }));
+        TerminalManager.displayMessages(messages, {
+            isCommandOutput: true
+        });
+    }
 
-        const noun = args[0]?.toLowerCase();
-
-        switch (noun) {
-        case "users":
-            {
-                const messages = SessionManager.users.map((u, i) => ({
-                            message: `${i + 1}. ${u.username}`,
-                            instant: true
-                        }));
-                TerminalManager.displayMessages(messages, {
-                    isCommandOutput: true
-                });
-                break;
-            }
-        case "desktops":
-        case "desk":
-            {
-                const messages = SessionManager.desktops.map((s, i) => ({
-                            message: `${i + 1}. ${s.name}`,
-                            instant: true
-                        }));
-                TerminalManager.displayMessages(messages, {
-                    isCommandOutput: true
-                });
-                break;
-            }
-        default:
-            _err("usage: list <users|desktops>");
-        }
+    function _handleListDesktops(): void {
+        const messages = SessionManager.desktops.map((s, i) => ({
+                    message: `${i + 1}. ${s.name}`,
+                    instant: true
+                }));
+        TerminalManager.displayMessages(messages, {
+            isCommandOutput: true
+        });
     }
 
     function _showHelp() {
-        _out("commands: change, chusr, chdesk, list, help");
+        _out("commands: change, chusr, chdesk, users, desktops, help");
     }
 
     function _out(msg: string, prefix = "") {

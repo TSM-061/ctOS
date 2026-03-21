@@ -6,14 +6,14 @@ import Quickshell
 Singleton {
     id: focusManager
 
-    readonly property var current: _currentTarget?.item
+    readonly property var currentItem: _currentTarget?.item
 
     property var _currentTarget: null
     property var _targets: []
 
-    onCurrentChanged: {
-        if (current) {
-            current.forceActiveFocus();
+    onCurrentItemChanged: {
+        if (currentItem) {
+            currentItem.forceActiveFocus();
         }
     }
 
@@ -35,18 +35,36 @@ Singleton {
     }
 
     function requestFocus(item: var) {
-        _currentTarget = _targets.find(t => t.item.toString() === item.toString()) ?? null;
+        _currentTarget = _targets.find(target => {
+            if (!target.item || !item) {
+                return false;
+            }
+
+            return target.item.toString() === item.toString();
+        }) ?? null;
     }
 
     function focusNext() {
         const focusable = _getFocusableTargets();
-        const index = focusable.findIndex(t => t.item.toString() === _currentTarget?.item.toString());
+        const index = focusable.findIndex(target => {
+            if (!target.item || !_currentTarget?.item) {
+                return false;
+            }
+
+            return target.item.toString() === _currentTarget.item.toString();
+        });
         _currentTarget = focusable[(index + 1) % focusable.length] ?? null;
     }
 
     function focusPrevious() {
         const focusable = _getFocusableTargets();
-        const index = focusable.findIndex(t => t.item.toString() === _currentTarget?.item.toString());
+        const index = focusable.findIndex(target => {
+            if (!target.item || !_currentTarget?.item) {
+                return false;
+            }
+
+            return target.item.toString() === _currentTarget.item.toString();
+        });
         _currentTarget = focusable[(index - 1 + focusable.length) % focusable.length] ?? null;  // prevent negative remainder
     }
 }

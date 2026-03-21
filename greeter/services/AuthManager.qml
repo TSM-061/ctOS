@@ -84,7 +84,7 @@ Singleton {
         if (authManager._firstSession) {
             TerminalManager.displayMessages([
                 {
-                    message: `${authManager._blumePrefix} Opened session for user(${authManager._username})`,
+                    message: `${authManager._blumePrefix} Opened session for User${authManager._username})`,
                     unlock: authManager
                 }
             ]);
@@ -108,11 +108,11 @@ Singleton {
 
         TerminalManager.displayMessages([
             {
-                message: `${authManager._blumePrefix} IDENTITY_VERIFIED // WELCOME BACK`,
-                virtualPrompt: "login"
+                message: `${authManager._blumePrefix} IDENTITY_VERIFIED // SID:${Faker.randomHexString(24)}`,
+                virtualCommand: "login"
             },
             {
-                message: `${authManager._blumePrefix} Session closed for user(${authManager._username.toUpperCase()})`
+                message: `${authManager._blumePrefix} Authentication session closed.`
             }
         ]);
     }

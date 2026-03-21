@@ -70,8 +70,8 @@ Singleton {
                 return;
             }
 
-            logger.info(`Created session (user:${SessionManager.activeUser})`);
-            Greetd.createSession(SessionManager.activeUser);
+            logger.info(`Created session (user:${SessionManager.activeUser.uid}:${SessionManager.activeUser.username})`);
+            Greetd.createSession(SessionManager.activeUser.username);
 
             sessionStarter.stop();
         }

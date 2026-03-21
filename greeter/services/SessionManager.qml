@@ -30,33 +30,55 @@ Singleton {
         Desktop {}
     }
 
-    function _findIn(list, value, key) {
-        if (!value) {
+    function findUser(value) {
+        if (value === undefined || value === null) {
             return null;
         }
 
-        const oneBasedIdx = parseInt(value);
-        if (!isNaN(oneBasedIdx)) {
-            return list[oneBasedIdx - 1] ?? null;
+        const searchValue = value.toString().trim();
+        if (!searchValue.length) {
+            return null;
         }
 
-        return list.find(item => {
-            const itemValue = item[key].toLowerCase();
-            const searchValue = value.toLowerCase();
-            return itemValue.includes(searchValue);
-        }) ?? null;
-    }
+        const numericValue = parseInt(searchValue);
 
-    function findUser(value) {
-        return _findIn(users, value, "username");
+        if (isNaN(numericValue)) {
+            const usernameSearch = searchValue.toLowerCase();
+            return users.find(user => user.username.toLowerCase().includes(usernameSearch)) ?? null;
+        }
+
+        const uidMatch = users.find(user => user.uid === numericValue);
+        if (uidMatch) {
+            return uidMatch;
+        }
+
+        return users[numericValue - 1] ?? null;
     }
 
     function findDesktop(value) {
-        return _findIn(desktops, value, "name");
+        if (value === undefined || value === null) {
+            return null;
+        }
+
+        const searchValue = value.toString().trim();
+
+        if (!searchValue.length) {
+            return null;
+        }
+
+        const oneBasedIdx = parseInt(searchValue);
+
+        if (isNaN(oneBasedIdx)) {
+            const desktopSearch = searchValue.toLowerCase();
+            return desktops.find(desktop => desktop.name.toLowerCase().includes(desktopSearch)) ?? null;
+        }
+
+        return desktops[oneBasedIdx - 1] ?? null;
     }
 
     function setUser(value, saveDefault = false) {
         const found = findUser(value);
+
         if (!found) {
             return false;
         }
@@ -72,6 +94,7 @@ Singleton {
 
     function setDesktop(value, saveDefault = false) {
         const found = findDesktop(value);
+
         if (!found) {
             return false;
         }
@@ -94,14 +117,13 @@ Singleton {
             return ["uwsm", "stop"];
         }
 
-        const xdg = Quickshell.env("XDG_CURRENT_DESKTOP") || "";
-        const env = xdg.toLowerCase();
+        const currentDesktop = Quickshell.env("XDG_CURRENT_DESKTOP").toLowerCase() || "";
 
-        if (env.includes("hyprland")) {
+        if (currentDesktop.includes("hyprland")) {
             return ["hyprctl", "dispatch", "exit"];
         }
 
-        if (env.includes("niri")) {
+        if (currentDesktop.includes("niri")) {
             return ["niri", "msg", "action", "quit"];
         }
 
@@ -120,7 +142,7 @@ Singleton {
         command: ["sh", "-c", "env | grep -q '^UWSM'"]
         running: true
         onExited: exitCode => {
-            _isUsingUwsm = (exitCode === 0);
+            sessionManager._isUsingUwsm = exitCode === 0;
             desktopsProcess.running = true;
         }
     }
@@ -132,31 +154,35 @@ Singleton {
         stdout: SplitParser {
             onRead: data => {
                 const parts = data.trim().split(":");
+
                 if (parts.length < 7) {
                     return;
                 }
 
                 const [user, , uidStr, , , home, shell] = parts;
+
                 const uid = parseInt(uidStr);
 
-                const isStandard = (uid >= 1000 && uid < 60000);
+                const isStandard = uid >= 1000 && uid < 60000;
                 const isRealUser = !shell.match(/nologin|false|sync/);
-                const isNotNobody = (user !== "nobody");
+                const isNotNobody = user !== "nobody";
 
-                if (isStandard && isRealUser && isNotNobody) {
-                    const userObj = userFactory.createObject(sessionManager, {
-                        "username": user,
-                        "homeDir": home,
-                        "shell": shell,
-                        "uid": uid
-                    });
+                if (!isStandard || !isRealUser || !isNotNobody) {
+                    return;
+                }
 
-                    users.push(userObj);
-                    usersChanged();
+                const userObj = userFactory.createObject(sessionManager, {
+                    "username": user,
+                    "homeDir": home,
+                    "shell": shell,
+                    "uid": uid
+                });
 
-                    if (!_firstUser) {
-                        _firstUser = userObj;
-                    }
+                sessionManager.users.push(userObj);
+                sessionManager.usersChanged();
+
+                if (!sessionManager._firstUser) {
+                    sessionManager._firstUser = userObj;
                 }
             }
         }

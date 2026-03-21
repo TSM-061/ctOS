@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 
 import qs.common
+import qs.greeter.services
 
 Singleton {
     id: handler
@@ -17,8 +18,17 @@ Singleton {
         name: "Faker"
     }
 
+    Connections {
+        target: SessionManager
+
+        function onActiveUserChanged() {
+            logger.info(`Active user changed, recreating fake session.`);
+            sessionStarter.restart();
+        }
+    }
+
     function start() {
-        sessionStarter.start();
+        sessionStarter.restart();
     }
 
     Timer {

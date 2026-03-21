@@ -46,7 +46,8 @@ ColumnLayout {
     ListView {
         id: logView
 
-        property bool isFirstPrompt: true
+        /* was the last command manually entered using the terminal cli */
+        property bool wasManualCommandInput: false
 
         model: terminal.logModel
         clip: true
@@ -155,6 +156,8 @@ ColumnLayout {
                     }
 
                     onVirtualCommandChanged: {
+                        logView.wasManualCommandInput = false;
+
                         // REVIEW bindings on animations do not update correctly
                         // on start, could be related to 'setProperty' on model
                         typewriterAnimation.to = virtualCommand.length;
@@ -198,10 +201,12 @@ ColumnLayout {
                         enabled: inputDelegate.virtualCommand === ""
 
                         onAccepted: {
-                            CommandManager.sendCommand(terminalInput.text);
-
                             enabled = false;
-                            logView.isFirstPrompt = false;
+                            focus = false;
+
+                            logView.wasManualCommandInput = true;
+
+                            CommandManager.sendCommand(terminalInput.text);
                         }
 
                         Keys.onUpPressed: {
@@ -225,8 +230,7 @@ ColumnLayout {
                                 tabIndex: 1
                             });
 
-                            // make sure to focus the next prompt that is generated
-                            if (!logView.isFirstPrompt) {
+                            if (logView.wasManualCommandInput) {
                                 FocusManager.requestFocus(terminalInput);
                             }
                         }
