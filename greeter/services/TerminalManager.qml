@@ -5,14 +5,12 @@ import Quickshell
 
 import qs.common
 import qs.greeter.config
-import qs.greeter.data
+import qs.greeter.services
 
 Singleton {
     id: terminalManager
 
     signal paused(string pauseMarker)
-
-    property int state: TerminalManager.State.Booting
 
     // actual model for output messages
     property var logModel: ListModel {}
@@ -27,54 +25,11 @@ Singleton {
     property bool isPaused: false
 
     // locking means an input prompt won't be added
-    property var _serviceLocks: []
-    readonly property bool locked: _serviceLocks.some(service => service.locked)
-
-    enum State {
-        Booting,
-        Interactive,
-        Busy,
-        TearDown
-    }
+    readonly property bool locked: false
 
     enum MessageType {
         Output,
         Prompt
-    }
-
-    function registerService(service) {
-        _serviceLocks.push({
-            id: service.toString(),
-            locked: true
-        });
-
-        _serviceLocksChanged();
-    }
-
-    function unlock(service) {
-        const foundService = _serviceLocks.find(s => s.id === service.toString());
-
-        if (!foundService) {
-            throw new Error(`Service not registered: '${service}'`);
-        }
-
-        foundService.locked = false;
-        _serviceLocksChanged();
-
-        if (!locked && state === TerminalManager.State.Booting) {
-            terminalManager.state = TerminalManager.State.Interactive;
-        }
-    }
-
-    function lock(service) {
-        const foundService = _serviceLocks.find(s => s.id === service.toString());
-
-        if (!foundService) {
-            throw new Error(`Service not registered: '${service}'`);
-        }
-
-        foundService.locked = true;
-        _serviceLocksChanged();
     }
 
     /*
@@ -101,27 +56,10 @@ Singleton {
             instant: instant,
             /* Allows terminal to sync with external events. */
             pauseWithMarker: properties.pauseWithMarker || "",
-            /* Simulate a command being typed into prompt. */
-            virtualCommand: properties.virtualCommand || ""
+            syntheticCommand: properties.syntheticCommand || ""
         };
-
-        if (properties.lock) {
-            message.lock = properties.lock;
-        }
-
-        if (properties.unlock) {
-            // role is not created if member is null
-            message.unlock = properties.unlock;
-        }
 
         return message;
-    }
-
-    function createMessageOptions(properties) {
-        return {
-            /* Is output from a user command. */
-            isCommandOutput: properties?.isCommandOutput || false
-        };
     }
 
     function addToModel(items) {
@@ -148,27 +86,6 @@ Singleton {
         processQueue();
     }
 
-    Component.onCompleted: {
-        registerService(terminalManager);
-
-        displayMessages([
-            {
-                message: "REGION_LINK_ESTABLISHED : AU-SOUTH-EAST-2"
-            },
-            {
-                message: "LOG_STREAM_CONNECTED // 1B7C5296-469D-4595-AD5D-4E31349CF13F"
-            },
-            {
-                message: `WL_OUTPUT_FOUND: ${Settings.monitor} <-> ADDR_PTR: 0x${Faker.randomHexString()}`
-            },
-            {
-                message: "---GREETER_UI_INITIALIZING---",
-                pauseWithMarker: "UI_INIT",
-                unlock: terminalManager
-            }
-        ]);
-    }
-
     function processQueue() {
         if (queueWorker.running) {
             return;
@@ -180,37 +97,10 @@ Singleton {
 
             addToModel(msg);
 
-            if (msg.lock) {
-                lock(msg.lock);
-            }
-
-            if (msg.unlock) {
-                unlock(msg.unlock);
-            }
-
             if (msg.pauseWithMarker) {
                 queueWorker.stop();
                 paused(msg.pauseWithMarker);
                 return;
-            }
-
-            if (msg.virtualCommand) {
-                let lastPromptIndex = -1;
-
-                for (let i = logModel.count - 1; i >= 0; i--) {
-                    const msg = logModel.get(i);
-
-                    if (msg.type === TerminalManager.MessageType.Prompt) {
-                        lastPromptIndex = i;
-                        break;
-                    }
-                }
-
-                if (lastPromptIndex === -1) {
-                    throw new Error("Prompt not found");
-                }
-
-                logModel.setProperty(lastPromptIndex, "virtualCommand", msg.virtualCommand);
             }
 
             if (msg.type === TerminalManager.MessageType.Prompt) {
@@ -253,6 +143,8 @@ Singleton {
             return;
         }
 
+        // Add a natural random delay with messages being added to terminal
+
         const minDelay = 200;
         const maxDelay = 400;
         const delay = Math.random() * maxDelay;
@@ -268,5 +160,65 @@ Singleton {
         interval: 100
 
         onTriggered: terminalManager.processQueue()
+    }
+
+    readonly property string _blumePrefix: "[BLUME_IDP]"
+    readonly property string _sentinelPrefix: "[SENTINEL]"
+
+    Component.onCompleted: {
+        const protocol = Settings.isTest ? "CTOS_TEST" : Settings.isGreetd || Settings.isKiosk ? "CTOS_GREETD" : Settings.isLockd ? "CTOS_LOCKD" : "CTOS_DEFAULT";
+        displayMessages([
+            {
+                message: "REGION_LINK_ESTABLISHED : AU-SOUTH-EAST-2"
+            },
+            {
+                message: "LOG_STREAM_CONNECTED // 1B7C5296-469D-4595-AD5D-4E31349CF13F"
+            },
+            {
+                message: `WL_OUTPUT_FOUND: ${Settings.monitor} <-> ADDR_PTR: 0x${Faker.randomHexString()}`
+            },
+            {
+                message: "---GREETER_UI_INITIALIZING---",
+                pauseWithMarker: "UI_INIT"
+            },
+            {
+                message: `◈ ${terminalManager._blumePrefix} using Protocol::${protocol}`
+            },
+            {
+                message: `${terminalManager._blumePrefix} Authentication Session opened.`
+            }
+        ]);
+    }
+
+    Connections {
+        target: AuthManager
+
+        function onStateChanged() {
+            switch (AuthManager.state) {
+            case AuthManager.State.Loading:
+                terminalManager.logModel.setProperty(terminalManager.logModel.count - 1, "syntheticCommand", "login");
+                break;
+            case AuthManager.State.Success:
+                terminalManager.displayMessages([
+                    {
+                        message: `${terminalManager._blumePrefix} IDENTITY_VERIFIED // SID:${Faker.randomHexString(24)}`
+                    },
+                    {
+                        message: `${terminalManager._blumePrefix} Authentication session closed.`
+                    }
+                ]);
+                break;
+            case AuthManager.State.Failed:
+                terminalManager.displayMessages([
+                    {
+                        message: `${terminalManager._sentinelPrefix} Authentication Failed (TraceId: ${Faker.randomHexString(16)})`,
+                        virtualCommand: "login"
+                    },
+                ], {
+                    isCommandOutput: true
+                });
+                break;
+            }
+        }
     }
 }

@@ -35,38 +35,13 @@ Singleton {
 
     property var _handler
 
-    property bool _firstSession: true
-
-    readonly property string _blumePrefix: "[BLUME_IDP]"
-    readonly property string _sentinelPrefix: "[SENTINEL ]"
-
     Component.onCompleted: {
-        TerminalManager.registerService(authManager);
-
         if (Settings.isTest) {
             _handler = FakeHandler;
-
-            TerminalManager.displayMessages([
-                {
-                    message: `◈ ${authManager._blumePrefix} using Protocol::CTOS_TEST`
-                }
-            ]);
         } else if (Settings.isGreetd || Settings.isKiosk) {
             _handler = GreetdHandler;
-
-            TerminalManager.displayMessages([
-                {
-                    message: `◈ ${authManager._blumePrefix} using Protocol::CTOS_GREETD`
-                }
-            ]);
         } else if (Settings.isLockd) {
             _handler = LockdHandler;
-
-            TerminalManager.displayMessages([
-                {
-                    message: `◈ ${authManager._blumePrefix} using Protocol::CTOS_LOCKD`
-                }
-            ]);
         } else {
             throw new Error("No Auth Manager provided: set CTOS_MODE to 'greetd' or 'lockd'");
         }
@@ -80,23 +55,6 @@ Singleton {
 
     function onReady() {
         authManager.state = AuthManager.State.Ready;
-
-        if (authManager._firstSession) {
-            TerminalManager.displayMessages([
-                {
-                    message: `${authManager._blumePrefix} Opened session for User${authManager._username})`,
-                    unlock: authManager
-                }
-            ]);
-            authManager._firstSession = false;
-        } else {
-            TerminalManager.displayMessages([
-                {
-                    message: `${authManager._blumePrefix} Session recreated with existing parameters.`,
-                    unlock: authManager
-                }
-            ]);
-        }
     }
 
     function onSuccess() {
@@ -105,16 +63,6 @@ Singleton {
         }
 
         authManager.state = AuthManager.State.Success;
-
-        TerminalManager.displayMessages([
-            {
-                message: `${authManager._blumePrefix} IDENTITY_VERIFIED // SID:${Faker.randomHexString(24)}`,
-                virtualCommand: "login"
-            },
-            {
-                message: `${authManager._blumePrefix} Authentication session closed.`
-            }
-        ]);
     }
 
     function onFailed() {
@@ -125,17 +73,6 @@ Singleton {
         authManager.state = AuthManager.State.Failed;
 
         resetTimer.start();
-
-        TerminalManager.displayMessages([
-            {
-                message: `${authManager._sentinelPrefix} Authentication Failed (TraceId: ${Faker.randomHexString(16)})`,
-                virtualCommand: "login",
-                lock: authManager
-            },
-        ], {
-            isCommandOutput: true
-        });
-        // TODO fix race condition from session creation message and new command prompt
     }
 
     Timer {

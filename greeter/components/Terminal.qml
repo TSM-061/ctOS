@@ -8,7 +8,6 @@ import qs.common
 import qs.common.services
 import qs.common.components
 import qs.greeter.config
-import qs.greeter.data
 
 ColumnLayout {
     id: terminal
@@ -45,9 +44,6 @@ ColumnLayout {
 
     ListView {
         id: logView
-
-        /* was the last command manually entered using the terminal cli */
-        property bool wasManualCommandInput: false
 
         model: terminal.logModel
         clip: true
@@ -144,10 +140,7 @@ ColumnLayout {
                     spacing: 0
 
                     required property bool instant
-
-                    required property string virtualCommand
-
-                    property int charIndex: 0
+                    required property string syntheticCommand
 
                     Binding {
                         target: scrollAnimation
@@ -155,38 +148,30 @@ ColumnLayout {
                         value: inputDelegate.instant ? 0 : 50
                     }
 
-                    onVirtualCommandChanged: {
-                        logView.wasManualCommandInput = false;
-
-                        // REVIEW bindings on animations do not update correctly
-                        // on start, could be related to 'setProperty' on model
-                        typewriterAnimation.to = virtualCommand.length;
-                        typewriterAnimation.duration = virtualCommand.length * 20;
-                        typewriterAnimation.start();
-                    }
-
-                    Binding {
-                        target: terminalInput
-                        property: "text"
-                        value: inputDelegate.virtualCommand.substring(0, inputDelegate.charIndex)
-                        when: inputDelegate.virtualCommand !== ""
-                    }
-
-                    NumberAnimation {
-                        id: typewriterAnimation
-                        target: inputDelegate
-                        property: "charIndex"
-                        from: 0
-                        easing.type: Easing.Linear
-                    }
-
                     Text {
                         id: terminalPrompt
 
-                        text: "» "
+                        property int charIndex: 0
+
+                        property string command: inputDelegate.syntheticCommand
+
+                        text: "» " + command.substr(0, charIndex)
                         color: Theme.textPrimaryDim
                         font: terminal.font
                         height: parent.height
+
+                        onCommandChanged: {
+                            typewriterAnimation.to = command.length;
+                            typewriterAnimation.start();
+                        }
+
+                        NumberAnimation {
+                            id: typewriterAnimation
+                            target: terminalPrompt
+                            property: "charIndex"
+                            from: 0
+                            easing.type: Easing.Linear
+                        }
                     }
 
                     TextInput {
@@ -198,13 +183,12 @@ ColumnLayout {
                         color: Theme.textPrimaryDim
                         font: terminal.font
 
-                        enabled: inputDelegate.virtualCommand === ""
+                        enabled: !inputDelegate.syntheticCommand
+                        focus: !inputDelegate.syntheticCommand
 
                         onAccepted: {
                             enabled = false;
                             focus = false;
-
-                            logView.wasManualCommandInput = true;
 
                             CommandManager.sendCommand(terminalInput.text);
                         }
@@ -229,10 +213,6 @@ ColumnLayout {
                             FocusManager.registerTarget(terminalInput, {
                                 tabIndex: 1
                             });
-
-                            if (logView.wasManualCommandInput) {
-                                FocusManager.requestFocus(terminalInput);
-                            }
                         }
                     }
                 }
