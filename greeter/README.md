@@ -46,8 +46,9 @@ vt = 1
 [default_session]
 # only ONE command should be active
 
-# hyprland
+# hyprland (conf or lua)
 command = "env HYPRLAND_CONFIG=/etc/ctos/greeter.hyprland.conf uwsm start hyprland.desktop"
+# command = "env HYPRLAND_CONFIG=/etc/ctos/greeter.hyprland.lua uwsm start hyprland.desktop"
 
 # niri
 command = "env NIRI_CONFIG=/etc/ctos/greeter.niri.kdl uwsm start niri.desktop"
