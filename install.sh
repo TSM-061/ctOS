@@ -206,6 +206,10 @@ function install_greeter_compositor_config() {
 
   if [[ -n "$config_src" ]]; then
     install_file "$config_src" "$config_dest"
+    if [[ "$COMPOSITOR" == "hyprland" && -f "$scaffold_dir/greeter.hyprland.lua" ]]; then
+      # install lua configuration alongside .conf
+      install_file "$scaffold_dir/greeter.hyprland.lua" "$CONFIG_DIR/greeter.hyprland.lua"
+    fi
     return 0
   fi
 }
